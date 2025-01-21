@@ -1,0 +1,6 @@
+pipenv
+django
+matplotlib
+reportlab
+mysqlclient
+
