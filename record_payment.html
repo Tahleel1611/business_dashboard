@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4>Record Payment for Invoice #{{ invoice.invoice_number }}</h4>
+                </div>
+                <div class="card-body">
+                    <!-- Invoice Summary -->
+                    <div class="mb-4">
+                        <h5>Invoice Summary</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Customer:</strong> {{ invoice.customer.name }}</p>
+                                <p><strong>Invoice Date:</strong> {{ invoice.date|date:"Y-m-d" }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Total Amount:</strong> ₹{{ invoice.total }}</p>
+                                <p><strong>Amount Due:</strong> ₹{{ invoice.total|sub:invoice.payments.all|sum:'amount' }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment Form -->
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="form-group mb-3">
+                            <label for="amount">Payment Amount*</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control" id="amount" name="amount" step="0.01" max="{{ invoice.total|sub:invoice.payments.all|sum:'amount' }}" required>
+                            </div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="payment_method">Payment Method*</label>
+                            <select class="form-select" id="payment_method" name="payment_method" required>
+                                <option value="">Select Payment Method</option>
+                                <option value="cash">Cash</option>
+                                <option value="card">Card</option>
+                                <option value="upi">UPI</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="transaction_id">Transaction ID</label>
+                            <input type="text" class="form-control" id="transaction_id" name="transaction_id">
+                            <small class="form-text text-muted">Required for card, UPI, and bank transfer payments</small>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label for="notes">Notes</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'view_invoice' invoice.pk %}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-primary">Record Payment</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentMethodSelect = document.getElementById('payment_method');
+    const transactionIdInput = document.getElementById('transaction_id');
+    
+    paymentMethodSelect.addEventListener('change', function() {
+        const method = this.value;
+        if (method === 'cash') {
+            transactionIdInput.removeAttribute('required');
+            transactionIdInput.parentElement.classList.remove('required');
+        } else {
+            transactionIdInput.setAttribute('required', 'required');
+            transactionIdInput.parentElement.classList.add('required');
+        }
+    });
+});
+</script>
+{% endblock %}
+
+{% endblock %}

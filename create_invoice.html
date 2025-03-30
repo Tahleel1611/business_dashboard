@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<style>
+    .item-row {
+        background-color: #f8f9fa;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header">
+            <h4>Create New Invoice</h4>
+        </div>
+        <div class="card-body">
+            <form id="invoiceForm" method="post">
+                {% csrf_token %}
+                
+                <!-- Customer Selection -->
+                <div class="mb-4">
+                    <label for="customer" class="form-label">Customer*</label>
+                    <select class="form-select" id="customer" name="customer" required>
+                        <option value="">Select Customer</option>
+                        {% for customer in customers %}
+                        <option value="{{ customer.id }}">{{ customer.name }} {% if customer.gstin %}(GSTIN: {{ customer.gstin }}){% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Due Date -->
+                <div class="mb-4">
+                    <label for="due_date" class="form-label">Due Date*</label>
+                    <input type="date" class="form-control" id="due_date" name="due_date" required>
+                </div>
+
+                <!-- Invoice Items -->
+                <div class="mb-4">
+                    <h5>Invoice Items</h5>
+                    <div id="itemsContainer">
+                        <!-- Items will be added here dynamically -->
+                    </div>
+                    <button type="button" class="btn btn-outline-primary" id="addItem">Add Item</button>
+                </div>
+
+                <!-- Totals -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p class="mb-1">Subtotal: ₹<span id="subtotal">0.00</span></p>
+                            </div>
+                            <div class="col-md-4">
+                                <p class="mb-1">GST Total: ₹<span id="gstTotal">0.00</span></p>
+                            </div>
+                            <div class="col-md-4">
+                                <p class="mb-1 fw-bold">Total: ₹<span id="total">0.00</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="mb-4">
+                    <label for="notes" class="form-label">Notes</label>
+                    <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                </div>
+
+                <input type="hidden" name="items" id="itemsJson">
+
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'invoice_list' %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Create Invoice</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Item Template -->
+<template id="itemTemplate">
+    <div class="item-row mb-3">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Product*</label>
+                <select class="form-select product-select" required>
+                    <option value="">Select Product</option>
+                    {% for product in products %}
+                    <option value="{{ product.id }}">{{ product.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Quantity*</label>
+                <input type="number" class="form-control quantity-input" min="1" required>
+                <small class="stock-info text-muted"></small>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Unit Price</label>
+                <input type="text" class="form-control unit-price" readonly>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">GST Rate</label>
+                <input type="text" class="form-control gst-rate" readonly>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Total</label>
+                <input type="text" class="form-control item-total" readonly>
+            </div>
+            <div class="col-12 text-end">
+                <button type="button" class="btn btn-danger btn-sm remove-item">Remove</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const itemsContainer = document.getElementById('itemsContainer');
+    const addItemBtn = document.getElementById('addItem');
+    const itemTemplate = document.getElementById('itemTemplate');
+    const invoiceForm = document.getElementById('invoiceForm');
+    const itemsJson = document.getElementById('itemsJson');
+
+    // Set default due date to 30 days from today
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 30);
+    document.getElementById('due_date').value = dueDate.toISOString().split('T')[0];
+
+    function addItem() {
+        const clone = document.importNode(itemTemplate.content, true);
+        itemsContainer.appendChild(clone);
+
+        // Add event listeners to the new item
+        const newItem = itemsContainer.lastElementChild;
+        setupItemListeners(newItem);
+    }
+
+    function setupItemListeners(item) {
+        const productSelect = item.querySelector('.product-select');
+        const quantityInput = item.querySelector('.quantity-input');
+        const removeBtn = item.querySelector('.remove-item');
+
+        productSelect.addEventListener('change', async function() {
+            if (this.value) {
+                const response = await fetch(`/inventory/get-product-info/?product_id=${this.value}`);
+                const data = await response.json();
+                
+                const unitPrice = item.querySelector('.unit-price');
+                const gstRate = item.querySelector('.gst-rate');
+                const stockInfo = item.querySelector('.stock-info');
+                
+                unitPrice.value = `₹${data.price.toFixed(2)}`;
+                gstRate.value = `${data.gst_rate}%`;
+                stockInfo.textContent = `Available: ${data.stock_quantity}`;
+                quantityInput.max = data.stock_quantity;
+                
+                updateItemTotal(item);
+            }
+        });
+
+        quantityInput.addEventListener('input', () => updateItemTotal(item));
+        removeBtn.addEventListener('click', () => {
+            item.remove();
+            updateTotals();
+        });
+    }
+
+    function updateItemTotal(item) {
+        const quantity = parseFloat(item.querySelector('.quantity-input').value) || 0;
+        const unitPrice = parseFloat(item.querySelector('.unit-price').value.replace('₹', '')) || 0;
+        const gstRate = parseFloat(item.querySelector('.gst-rate').value.replace('%', '')) || 0;
+        
+        const subtotal = quantity * unitPrice;
+        const gstAmount = subtotal * (gstRate / 100);
+        const total = subtotal + gstAmount;
+        
+        item.querySelector('.item-total').value = `₹${total.toFixed(2)}`;
+        updateTotals();
+    }
+
+    function updateTotals() {
+        let subtotal = 0;
+        let gstTotal = 0;
+        
+        itemsContainer.querySelectorAll('.item-row').forEach(item => {
+            const quantity = parseFloat(item.querySelector('.quantity-input').value) || 0;
+            const unitPrice = parseFloat(item.querySelector('.unit-price').value.replace('₹', '')) || 0;
+            const gstRate = parseFloat(item.querySelector('.gst-rate').value.replace('%', '')) || 0;
+            
+            const itemSubtotal = quantity * unitPrice;
+            const itemGst = itemSubtotal * (gstRate / 100);
+            
+            subtotal += itemSubtotal;
+            gstTotal += itemGst;
+        });
+        
+        const total = subtotal + gstTotal;
+        
+        document.getElementById('subtotal').textContent = subtotal.toFixed(2);
+        document.getElementById('gstTotal').textContent = gstTotal.toFixed(2);
+        document.getElementById('total').textContent = total.toFixed(2);
+    }
+
+    addItemBtn.addEventListener('click', addItem);
+
+    invoiceForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const items = [];
+        itemsContainer.querySelectorAll('.item-row').forEach(item => {
+            const productId = item.querySelector('.product-select').value;
+            const quantity = item.querySelector('.quantity-input').value;
+            
+            if (productId && quantity) {
+                items.push({
+                    product_id: productId,
+                    quantity: parseInt(quantity)
+                });
+            }
+        });
+        
+        if (items.length === 0) {
+            alert('Please add at least one item to the invoice.');
+            return;
+        }
+        
+        itemsJson.value = JSON.stringify(items);
+        this.submit();
+    });
+
+    // Add first item row
+    addItem();
+});
+</script>
+{% endblock %}
