@@ -40,6 +40,11 @@ INSTALLED_APPS = [
     'inventory',
 ]
 
+INSTALLED_APPS += [
+    'django_plotly_dash.apps.DjangoPlotlyDashConfig',
+    'channels',
+]
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -123,11 +128,38 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
+
+# Media files
+MEDIA_URL = 'media/'
+MEDIA_ROOT = BASE_DIR / 'media'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Admin site settings
+ADMIN_SITE_HEADER = "Business Dashboard Admin"
+ADMIN_SITE_TITLE = "Business Dashboard Admin Portal"
+ADMIN_INDEX_TITLE = "Welcome to Business Dashboard Admin"
+
+# Admin site URL configuration
+ADMIN_SITE_URL = '/admin/'
+
 #login redirect
 LOGIN_URL = '/admin/login/'
+
+# Add Plotly Dash settings
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+# Add Channels settings
+ASGI_APPLICATION = 'dashboard.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}

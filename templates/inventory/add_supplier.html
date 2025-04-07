@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Supplier{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h2 mb-3">Add New Supplier</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'supplier_list' %}">Suppliers</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Add Supplier</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label required-field">Supplier Name</label>
+                                <input type="text" name="name" id="name" class="form-control" required>
+                                <div class="help-text">Enter the supplier's name</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email (Optional)</label>
+                                <input type="email" name="email" id="email" class="form-control">
+                                <div class="help-text">Enter the supplier's email address</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="phone" class="form-label">Phone (Optional)</label>
+                                <input type="tel" name="phone" id="phone" class="form-control">
+                                <div class="help-text">Enter the supplier's phone number</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="gstin" class="form-label">GSTIN (Optional)</label>
+                                <input type="text" name="gstin" id="gstin" class="form-control" maxlength="15">
+                                <div class="help-text">Enter the supplier's GSTIN number</div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="address" class="form-label">Address (Optional)</label>
+                                <textarea name="address" id="address" class="form-control" rows="3"></textarea>
+                                <div class="help-text">Enter the supplier's address</div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save me-2"></i> Save Supplier
+                        </button>
+                        <a href="{% url 'supplier_list' %}" class="btn btn-secondary btn-lg ms-2">
+                            <i class="fas fa-arrow-left me-2"></i> Cancel
+                        </a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

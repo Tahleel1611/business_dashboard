@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    .table {
+        min-width: 100%;
+    }
+    
+    .status-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+    }
+    
+    .paid {
+        background-color: #28a745;
+        color: #fff;
+    }
+    
+    .pending {
+        background-color: #ffc107;
+        color: #000;
+    }
+    
+    .overdue {
+        background-color: #dc3545;
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h2 mb-3">Purchases</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Purchases</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Purchase History</h5>
+                    <a href="{% url 'record_purchase' %}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i> Record New Purchase
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Product</th>
+                                    <th>Supplier</th>
+                                    <th>Quantity</th>
+                                    <th>Unit Price</th>
+                                    <th>GST</th>
+                                    <th>Total</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in transactions %}
+                                    {% for item in transaction.multipurchaseitem_set.all %}
+                                    <tr>
+                                        <td>{{ transaction.date|date:"Y-m-d H:i" }}</td>
+                                        <td>{{ item.product.name }}</td>
+                                        <td>{{ transaction.supplier.name }}</td>
+                                        <td>{{ item.quantity }}</td>
+                                        <td>₹{{ item.price_per_unit|floatformat:2 }}</td>
+                                        <td>{{ item.gst_rate }}%</td>
+                                        <td>₹{{ item.total_amount|floatformat:2 }}</td>
+                                        <td>
+                                            <div class="btn-group">
+                                                {% if not transaction.is_paid %}
+                                                    <a href="{% url 'record_payment' transaction.id 'purchase' %}" class="btn btn-sm btn-success">
+                                                        <i class="fas fa-money-bill"></i>
+                                                    </a>
+                                                {% endif %}
+                                                <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete('{{ transaction.id }}')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% endfor %}
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="8" class="text-center">No purchases found</td>
+                                    </tr>
+                                {% endempty %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+"use strict";
+function confirmDelete(transactionId) {
+    if (confirm('Are you sure you want to delete this purchase?')) {
+        window.location.href = '/purchase/delete/' + transactionId;
+    }
+}
+</script>
+{% endblock %}

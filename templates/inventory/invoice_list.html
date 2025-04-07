@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Invoices</h2>
+        <a href="{% url 'create_invoice' %}" class="btn btn-primary">Create New Invoice</a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Due Date</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for invoice in invoices %}
+                        <tr>
+                            <td>{{ invoice.invoice_number }}</td>
+                            <td>{{ invoice.customer.name }}</td>
+                            <td>{{ invoice.date|date:"Y-m-d" }}</td>
+                            <td>{{ invoice.due_date|date:"Y-m-d" }}</td>
+                            <td>₹{{ invoice.total }}</td>
+                            <td>
+                                {% if invoice.payment_status == 'paid' %}
+                                <span class="badge bg-success">Paid</span>
+                                {% elif invoice.payment_status == 'partial' %}
+                                <span class="badge bg-warning">Partially Paid</span>
+                                {% else %}
+                                <span class="badge bg-danger">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'view_invoice' invoice.pk %}" class="btn btn-sm btn-outline-primary">View</a>
+                                    <a href="{% url 'generate_invoice_pdf' invoice.pk %}" class="btn btn-sm btn-outline-secondary">PDF</a>
+                                    {% if invoice.payment_status != 'paid' %}
+                                    <a href="{% url 'record_payment' invoice.pk %}" class="btn btn-sm btn-outline-success">Record Payment</a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">No invoices found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
