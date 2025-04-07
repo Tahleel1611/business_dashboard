@@ -73,36 +73,37 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for transaction in transactions %}
-                                    {% for item in transaction.multipurchaseitem_set.all %}
-                                    <tr>
-                                        <td>{{ transaction.date|date:"Y-m-d H:i" }}</td>
-                                        <td>{{ item.product.name }}</td>
-                                        <td>{{ transaction.supplier.name }}</td>
-                                        <td>{{ item.quantity }}</td>
-                                        <td>₹{{ item.price_per_unit|floatformat:2 }}</td>
-                                        <td>{{ item.gst_rate }}%</td>
-                                        <td>₹{{ item.total_amount|floatformat:2 }}</td>
-                                        <td>
-                                            <div class="btn-group">
-                                                {% if not transaction.is_paid %}
-                                                    <a href="{% url 'record_payment' transaction.id 'purchase' %}" class="btn btn-sm btn-success">
-                                                        <i class="fas fa-money-bill"></i>
-                                                    </a>
-                                                {% endif %}
-                                                <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete('{{ transaction.id }}')">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                {% if transactions %}
+                                    {% for transaction in transactions %}
+                                        {% for item in transaction.multipurchaseitem_set.all %}
+                                        <tr>
+                                            <td>{{ transaction.date|date:"Y-m-d H:i" }}</td>
+                                            <td>{{ item.product.name }}</td>
+                                            <td>{{ transaction.supplier.name }}</td>
+                                            <td>{{ item.quantity }}</td>
+                                            <td>₹{{ item.price_per_unit|floatformat:2 }}</td>
+                                            <td>{{ item.gst_rate }}%</td>
+                                            <td>₹{{ transaction.total_amount|floatformat:2 }}</td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    {% if not transaction.is_paid %}
+                                                        <a href="{% url 'record_payment' transaction.id 'purchase' %}" class="btn btn-sm btn-success">
+                                                            <i class="fas fa-money-bill"></i>
+                                                        </a>
+                                                    {% endif %}
+                                                    <button type="button" class="btn btn-sm btn-danger" onclick="confirmDelete('{{ transaction.id }}')">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
                                     {% endfor %}
-                                {% endfor %}
-                                {% empty %}
+                                {% else %}
                                     <tr>
                                         <td colspan="8" class="text-center">No purchases found</td>
                                     </tr>
-                                {% endempty %}
+                                {% endif %}
                             </tbody>
                         </table>
                     </div>
@@ -111,6 +112,7 @@
         </div>
     </div>
 </div>
+{% endblock %}
 
 {% block extra_js %}
 <script>

@@ -44,7 +44,7 @@
                                     <a href="{% url 'view_invoice' invoice.pk %}" class="btn btn-sm btn-outline-primary">View</a>
                                     <a href="{% url 'generate_invoice_pdf' invoice.pk %}" class="btn btn-sm btn-outline-secondary">PDF</a>
                                     {% if invoice.payment_status != 'paid' %}
-                                    <a href="{% url 'record_payment' invoice.pk %}" class="btn btn-sm btn-outline-success">Record Payment</a>
+                                    <a href="{% url 'record_payment' invoice.pk 'invoice' %}" class="btn btn-sm btn-outline-success">Record Payment</a>
                                     {% endif %}
                                 </div>
                             </td>

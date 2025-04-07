@@ -7,7 +7,11 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="mb-0">Record Payment</h5>
+                    {% if transaction_type == 'invoice' %}
+                        <h5 class="mb-0">Record Invoice Payment</h5>
+                    {% elif transaction_type == 'purchase' %}
+                        <h5 class="mb-0">Record Purchase Payment</h5>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     <form method="post" action="{% url 'record_payment' transaction_id transaction_type %}">
@@ -35,6 +39,26 @@
                             <label for="transaction_id" class="form-label">Transaction ID</label>
                             <input type="text" class="form-control" id="transaction_id" name="transaction_id" value="{{ transaction_id }}" readonly>
                         </div>
+
+                        {% if transaction_type == 'invoice' %}
+                            <div class="mb-3">
+                                <label for="invoice_number" class="form-label">Invoice Number</label>
+                                <input type="text" class="form-control" id="invoice_number" name="invoice_number" value="{{ invoice_number }}" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label for="invoice_date" class="form-label">Invoice Date</label>
+                                <input type="text" class="form-control" id="invoice_date" name="invoice_date" value="{{ invoice_date }}" readonly>
+                            </div>
+                        {% elif transaction_type == 'purchase' %}
+                            <div class="mb-3">
+                                <label for="purchase_order_number" class="form-label">Purchase Order Number</label>
+                                <input type="text" class="form-control" id="purchase_order_number" name="purchase_order_number" value="{{ purchase_order_number }}" readonly>
+                            </div>
+                            <div class="mb-3">
+                                <label for="purchase_date" class="form-label">Purchase Date</label>
+                                <input type="text" class="form-control" id="purchase_date" name="purchase_date" value="{{ purchase_date }}" readonly>
+                            </div>
+                        {% endif %}
 
                         <div class="mb-3">
                             <label for="notes" class="form-label">Notes</label>

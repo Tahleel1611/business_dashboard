@@ -114,8 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize products array
     let selectedProducts = [];
     
-    // Product selection form
-    const productForm = document.getElementById('product-selection-form');
+    // Get form elements
     const productSelect = document.getElementById('product');
     const quantityInput = document.getElementById('quantity');
     const priceInput = document.getElementById('price');
@@ -123,15 +122,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const productList = document.getElementById('product-list');
     const emptyMessage = document.getElementById('empty-product-list');
     const productDataInput = document.getElementById('product-data');
+    const submitBtn = document.getElementById('submit-btn');
     
     // Add product button
     document.getElementById('add-product-btn').addEventListener('click', function(e) {
         e.preventDefault();
         
         const productId = productSelect.value;
-        const quantity = parseInt(quantityInput.value);
-        const price = parseFloat(priceInput.value);
-        const gstRate = parseFloat(gstRateInput.value);
+        const quantity = parseInt(quantityInput.value) || 0;
+        const price = parseFloat(priceInput.value) || 0;
+        const gstRate = parseFloat(gstRateInput.value) || 0;
         
         if (!productId || quantity <= 0 || isNaN(price) || isNaN(gstRate)) {
             alert('Please fill in all required fields with valid values');
@@ -139,8 +139,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Get product details
-        fetch(`/api/get-product-info/?product_id=${productId}`)
-            .then(response => response.json())
+        fetch("{% url 'api_get_product_info' %}?product_id=" + productId)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 // Check if product already exists in the list
                 const existingProductIndex = selectedProducts.findIndex(p => p.product_id === productId);
@@ -170,9 +175,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 quantityInput.value = '1';
                 priceInput.value = '';
                 gstRateInput.value = '';
-                
-                // Hide product info
-                document.getElementById('product-info-card').style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to fetch product information. Please try again.');
             });
     });
     
@@ -187,10 +193,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show/hide empty message
         if (selectedProducts.length === 0) {
             emptyMessage.style.display = 'block';
-            document.getElementById('submit-btn').disabled = true;
+            submitBtn.disabled = true;
         } else {
             emptyMessage.style.display = 'none';
-            document.getElementById('submit-btn').disabled = false;
+            submitBtn.disabled = false;
         }
         
         // Add products to list
@@ -200,38 +206,30 @@ document.addEventListener('DOMContentLoaded', function() {
             const subtotal = product.price_per_unit * product.quantity;
             const gstAmount = subtotal * (product.gst_rate / 100);
             const total = subtotal + gstAmount;
+            
             totalAmount += total;
             
-            const productItem = document.createElement('div');
-            productItem.className = 'product-item';
-            productItem.innerHTML = `
-                <button type="button" class="btn-remove" data-index="${index}">&times;</button>
-                <h6>${product.product_name}</h6>
-                <div class="row">
-                    <div class="col-md-3">
-                        <small class="text-muted">Quantity:</small>
-                        <div>${product.quantity}</div>
+            const productHtml = `
+                <div class="product-item">
+                    <div class="btn-remove" data-index="${index}" title="Remove product">
+                        <i class="fas fa-times"></i>
                     </div>
-                    <div class="col-md-3">
-                        <small class="text-muted">Price:</small>
-                        <div>₹${product.price_per_unit.toFixed(2)}</div>
-                    </div>
-                    <div class="col-md-3">
-                        <small class="text-muted">GST:</small>
-                        <div>${product.gst_rate}%</div>
-                    </div>
-                    <div class="col-md-3">
-                        <small class="text-muted">Total:</small>
-                        <div>₹${total.toFixed(2)}</div>
+                    <div class="product-info">
+                        <h5>${product.product_name}</h5>
+                        <p>Quantity: ${product.quantity}</p>
+                        <p>Price: ₹${product.price_per_unit.toFixed(2)}</p>
+                        <p>GST Rate: ${product.gst_rate}%</p>
+                        <p>Stock: ${product.stock_quantity}</p>
+                        <p class="total">Total: ₹${total.toFixed(2)}</p>
                     </div>
                 </div>
             `;
             
-            productList.appendChild(productItem);
+            productList.innerHTML += productHtml;
         });
         
         // Update summary
-        document.getElementById('summary-total').textContent = `₹${totalAmount.toFixed(2)}`;
+        document.getElementById('total-amount').textContent = totalAmount.toFixed(2);
     }
     
     // Remove product from list
@@ -242,48 +240,9 @@ document.addEventListener('DOMContentLoaded', function() {
             updateProductList();
         }
     });
-    
-    // Handle product selection
-    document.getElementById('product').addEventListener('change', function() {
-        const productId = this.value;
-        if (productId) {
-            fetch(`/api/get-product-info/?product_id=${productId}`)
-                .then(response => response.json())
-                .then(data => {
-                    // Update stock badge
-                    const badge = document.getElementById('stock-badge');
-                    if (data.stock_quantity <= 0) {
-                        badge.className = 'stock-badge out-of-stock';
-                        badge.textContent = 'Out of Stock';
-                    } else if (data.stock_quantity <= 5) {
-                        badge.className = 'stock-badge low-stock';
-                        badge.textContent = `Low Stock (${data.stock_quantity})`;
-                    } else {
-                        badge.className = 'stock-badge in-stock';
-                        badge.textContent = `In Stock (${data.stock_quantity})`;
-                    }
-                    
-                    // Show stock badge and product info
-                    badge.style.display = 'inline-block';
-                    document.getElementById('product-info-card').style.display = 'block';
-                    
-                    // Update price info
-                    document.getElementById('product-price').textContent = `₹${data.price.toFixed(2)}`;
-                    document.getElementById('product-gst').textContent = `${data.gst_rate}%`;
-                    
-                    // Set price and GST rate inputs with default values
-                    document.getElementById('price').value = data.price;
-                    document.getElementById('gst-rate').value = data.gst_rate;
-                });
-        } else {
-            document.getElementById('product-info-card').style.display = 'none';
-        }
-    });
 });
 </script>
 {% endblock %}
-
-{% block title %}Record Purchase{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -293,141 +252,121 @@ document.addEventListener('DOMContentLoaded', function() {
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Record Purchase</li>
+                    <li class="breadcrumb-item active" aria-current="page">Record Purchase</li>
                 </ol>
             </nav>
         </div>
     </div>
 
-    <form method="post" action="{% url 'record_purchase' %}">
+    <form method="post" action="{% url 'record_purchase' %}" class="needs-validation" novalidate>
         {% csrf_token %}
         <input type="hidden" id="product-data" name="product_data" value="[]">
         
         <div class="row">
             <div class="col-lg-8">
                 <!-- Product Selection Form -->
-                <div class="card mb-4" id="product-selection-form">
+                <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Add Products</h5>
                     </div>
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="product" class="form-label required-field">Product</label>
-                                <select id="product" class="form-select">
-                                    <option value="">-- Select Product --</option>
-                                    {% for product in products %}
-                                    <option value="{{ product.id }}">{{ product.name }}</option>
-                                    {% endfor %}
-                                </select>
-                                <span id="stock-badge" class="stock-badge mt-2" style="display: none;"></span>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="quantity" class="form-label required-field">Quantity</label>
-                                <input type="number" id="quantity" class="form-control" min="1" value="1">
-                            </div>
+                        <div class="mb-3">
+                            <label for="product" class="form-label required-field">Product</label>
+                            <select class="form-select" id="product" required>
+                                <option value="">Select a product</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}">{{ product.name }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
-                        
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="price" class="form-label required-field">Price Per Unit</label>
-                                <input type="number" id="price" class="form-control" step="0.01" min="0">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="gst-rate" class="form-label required-field">GST Rate (%)</label>
-                                <input type="number" id="gst-rate" class="form-control" step="0.01" min="0">
-                            </div>
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label required-field">Quantity</label>
+                            <input type="number" class="form-control" id="quantity" min="1" value="1" required>
                         </div>
-                        
-                        <div class="text-end">
-                            <button type="button" id="add-product-btn" class="btn btn-primary">
-                                <i class="bi bi-plus-circle"></i> Add Product
-                            </button>
+                        <div class="mb-3">
+                            <label for="price" class="form-label required-field">Price per Unit (₹)</label>
+                            <input type="number" class="form-control" id="price" step="0.01" required>
                         </div>
+                        <div class="mb-3">
+                            <label for="gst-rate" class="form-label required-field">GST Rate (%)</label>
+                            <input type="number" class="form-control" id="gst-rate" step="0.01" required>
+                        </div>
+                        <button type="button" class="btn btn-primary" id="add-product-btn">
+                            <i class="fas fa-plus"></i> Add Product
+                        </button>
                     </div>
                 </div>
-                
-                <!-- Selected Products List -->
-                <div class="card">
+
+                <!-- Product List -->
+                <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Selected Products</h5>
                     </div>
                     <div class="card-body">
                         <div id="empty-product-list" class="product-list-empty">
-                            <i class="bi bi-cart"></i>
-                            <p>No products added yet. Add products using the form above.</p>
+                            No products selected yet
                         </div>
                         <div id="product-list"></div>
-                        
-                        <div class="row mt-4">
-                            <div class="col-md-6 mb-3">
-                                <label for="supplier" class="form-label required-field">Supplier</label>
-                                <select name="supplier_id" id="supplier" class="form-select" required>
-                                    <option value="">-- Select Supplier --</option>
-                                    {% for supplier in suppliers %}
-                                    <option value="{{ supplier.id }}">{{ supplier.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="payment" class="form-label">Payment Method</label>
-                                <select name="payment_method" id="payment" class="form-select">
-                                    <option value="cash">Cash</option>
-                                    <option value="card">Card</option>
-                                    <option value="bank_transfer">Bank Transfer</option>
-                                </select>
-                            </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Transaction Details -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Transaction Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="supplier" class="form-label">Supplier</label>
+                            <select class="form-select" id="supplier" name="supplier_id">
+                                <option value="">Select a supplier</option>
+                                {% for supplier in suppliers %}
+                                <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
-                        
+                        <div class="mb-3">
+                            <label for="payment-method" class="form-label required-field">Payment Method</label>
+                            <select class="form-select" id="payment-method" name="payment_method" required>
+                                <option value="cash">Cash</option>
+                                <option value="card">Card</option>
+                                <option value="bank_transfer">Bank Transfer</option>
+                            </select>
+                        </div>
                         <div class="mb-3">
                             <label for="notes" class="form-label">Notes</label>
-                            <textarea name="notes" id="notes" class="form-control" rows="3"></textarea>
+                            <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Summary -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="summary-card">
+                            <div class="summary-row">
+                                <span class="summary-label">Total Amount</span>
+                                <span class="summary-value">₹<span id="total-amount">0.00</span></span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <div class="col-lg-4">
-                <!-- Product Information Card -->
-                <div class="card mb-4" id="product-info-card" style="display: none;">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Product Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <small class="d-block text-muted">Current Price</small>
-                                <span id="product-price" class="h5">₹0.00</span>
-                            </div>
-                            <div class="col-6">
-                                <small class="d-block text-muted">Current GST Rate</small>
-                                <span id="product-gst" class="h5">0%</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Purchase Summary Card -->
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title mb-0">Purchase Summary</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="summary-row">
-                            <span class="summary-label">Total Amount</span>
-                            <span id="summary-total" class="summary-value">₹0.00</span>
-                        </div>
-                        
-                        <div class="d-grid gap-2 mt-4">
-                            <button type="submit" id="submit-btn" class="btn btn-success" disabled>
-                                <i class="bi bi-check-circle"></i> Complete Purchase
-                            </button>
-                            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
-                                <i class="bi bi-x-circle"></i> Cancel
-                            </a>
-                        </div>
-                    </div>
-                </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12">
+                <button type="submit" class="btn btn-success" id="submit-btn" disabled>
+                    <i class="fas fa-save"></i> Record Purchase
+                </button>
+                <a href="{% url 'purchase_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-times"></i> Cancel
+                </a>
             </div>
         </div>
     </form>

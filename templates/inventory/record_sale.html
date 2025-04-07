@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const productId = this.value;
         
         if (productId) {
-            fetch(`/api/get-product-info/?product_id=${productId}`)
+            fetch("{% url 'api_get_product_info' %}?product_id=" + productId)
                 .then(response => response.json())
                 .then(data => {
                     // Update stock badge
@@ -299,8 +299,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Get product details
-        fetch(`/api/get-product-info/?product_id=${productId}`)
-            .then(response => response.json())
+        fetch("{% url 'api_get_product_info' %}?product_id=" + productId)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch product information');
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.stock_quantity < quantity) {
                     showValidationMessage('error', `Insufficient stock for ${data.name}. Only ${data.stock_quantity} available.`);
@@ -336,6 +341,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 formValidation.style.display = 'none';
             })
             .catch(error => {
+                console.error('Error:', error);
                 showValidationMessage('error', 'Failed to add product');
             });
     });
@@ -360,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Validate quantities against current stock
         const promises = selectedProducts.map(product => {
-            return fetch(`/api/get-product-info/?product_id=${product.product_id}`)
+            return fetch("{% url 'api_get_product_info' %}?product_id=" + product.product_id)
                 .then(response => response.json())
                 .then(data => {
                     if (data.stock_quantity < product.quantity) {
@@ -454,33 +460,33 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="notes" class="form-label">Notes</label>
-                                    <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                                    <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
                                 </div>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-end">
-                            <button type="button" id="add-product-btn" class="btn btn-primary">
-                                <i class="fas fa-plus me-2"></i>Add Product
-                            </button>
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="button" class="btn btn-primary" id="add-product-btn">Add Product</button>
+                            </div>
                         </div>
                     </div>
                 </div>
-
+                
                 <!-- Product List -->
                 <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Selected Products</h5>
                     </div>
                     <div class="card-body">
-                        <div id="empty-product-list" class="text-center py-4">
-                            <i class="fas fa-shopping-cart fa-3x text-muted mb-3"></i>
-                            <p class="text-muted">No products selected</p>
+                        <div id="product-list" class="mb-3">
+                            <div id="empty-product-list" class="product-list-empty">
+                                No products selected yet
+                            </div>
                         </div>
-                        <div id="product-list"></div>
                     </div>
                 </div>
             </div>
-
+            
             <div class="col-lg-4">
                 <!-- Product Information Card -->
                 <div class="card mb-4" id="product-info-card" style="display: none;">
@@ -488,43 +494,42 @@ document.addEventListener('DOMContentLoaded', function() {
                         <h5 class="card-title mb-0">Product Information</h5>
                     </div>
                     <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label">Name:</label>
-                            <p id="product-name" class="mb-0"></p>
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="form-label">Price:</label>
+                                <div id="product-price"></div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">GST Rate:</label>
+                                <div id="product-gst"></div>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Price:</label>
-                            <p id="product-price" class="mb-0"></p>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">GST Rate:</label>
-                            <p id="product-gst" class="mb-0"></p>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Stock:</label>
-                            <p id="product-stock" class="mb-0"></p>
-                            <span id="stock-badge" class="stock-badge" style="display: none;"></span>
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <label class="form-label">Stock Status:</label>
+                                <div id="stock-badge" class="stock-badge"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-
+                
                 <!-- Summary Card -->
-                <div class="card">
+                <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">Summary</h5>
                     </div>
                     <div class="card-body">
                         <div class="summary-row">
-                            <span class="summary-label">Subtotal:</span>
-                            <span class="summary-value" id="subtotal">₹0.00</span>
+                            <div class="summary-label">Subtotal:</div>
+                            <div class="summary-value" id="subtotal">₹0.00</div>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-label">GST (18%):</span>
-                            <span class="summary-value" id="gst">₹0.00</span>
+                            <div class="summary-label">GST:</div>
+                            <div class="summary-value" id="gst">₹0.00</div>
                         </div>
                         <div class="summary-row">
-                            <span class="summary-label">Total:</span>
-                            <span class="summary-value" id="total">₹0.00</span>
+                            <div class="summary-label">Total:</div>
+                            <div class="summary-value" id="total">₹0.00</div>
                         </div>
                     </div>
                 </div>
@@ -534,11 +539,8 @@ document.addEventListener('DOMContentLoaded', function() {
         <div class="row mt-4">
             <div class="col-12 text-end">
                 <button type="submit" class="btn btn-primary" id="submit-btn" disabled>
-                    <i class="fas fa-save me-2"></i>Record Sale
+                    Record Sale
                 </button>
-                <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary ms-2">
-                    <i class="fas fa-times me-2"></i>Cancel
-                </a>
             </div>
         </div>
     </form>
