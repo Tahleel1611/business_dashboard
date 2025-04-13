@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="h3 mb-4">Record Payment</h1>
+            
+            <div class="card">
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Transaction Details</h5>
+                            <p class="mb-0">Amount Paid: ₹{{ amount_paid|floatformat:2 }}</p>
+                            <p class="mb-0">Remaining Amount: ₹{{ remaining_amount|floatformat:2 }}</p>
+                            <p class="mb-0">Total Amount: ₹{{ transaction.total|floatformat:2 }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Transaction Information</h5>
+                            {% if transaction_type == 'invoice' %}
+                            <p class="mb-0">Invoice Number: {{ transaction.invoice_number }}</p>
+                            <p class="mb-0">Customer: {{ transaction.customer.name }}</p>
+                            {% else %}
+                            <p class="mb-0">Purchase ID: {{ transaction.id }}</p>
+                            <p class="mb-0">Supplier: {{ transaction.supplier.name }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="amount" class="form-label">Amount</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₹</span>
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="amount" 
+                                           name="amount" 
+                                           step="0.01" 
+                                           required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="payment_method" class="form-label">Payment Method</label>
+                                <select class="form-select" id="payment_method" name="payment_method" required>
+                                    <option value="cash">Cash</option>
+                                    <option value="card">Card</option>
+                                    <option value="upi">UPI</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="transaction_id" class="form-label">Transaction ID (Optional)</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="transaction_id" 
+                                       name="transaction_id">
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="notes" class="form-label">Notes (Optional)</label>
+                                <textarea class="form-control" 
+                                          id="notes" 
+                                          name="notes" 
+                                          rows="2"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end">
+                            <button type="submit" class="btn btn-primary">Record Payment</button>
+                            <a href="{% if transaction_type == 'invoice' %}{% url 'view_invoice' transaction.id %}{% else %}{% url 'purchase_list' %}{% endif %}" class="btn btn-secondary ms-2">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set initial amount
+    const amountInput = document.getElementById('amount');
+    amountInput.value = parseFloat('{{ remaining_amount }}').toFixed(2);
+    
+    // Form validation
+    const form = document.querySelector('form.needs-validation');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
+</script>
+{% endblock %}

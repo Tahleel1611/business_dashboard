@@ -25,7 +25,7 @@ urlpatterns = [
     path('generate_invoice/<int:pk>/', views.generate_invoice_pdf, name='generate_invoice_pdf'),
 
     # Record Payment
-    path('record_payment/<int:pk>/', views.record_payment, name='record_payment'),
+    path('record_payment/<int:pk>/<str:transaction_type>/', views.record_payment, name='record_payment'),
 
     # Customer URLs
     path('customer_list/', views.customer_list, name='customer_list'),
@@ -43,9 +43,6 @@ urlpatterns = [
     path('edit_supplier/<int:pk>/', views.edit_supplier, name='edit_supplier'),
     path('delete_supplier/<int:pk>/', views.delete_supplier, name='delete_supplier'),
 
-    # Payment URLs
-    path('get_product_info/', views.get_product_info, name='get_product_info'),
-    # AJAX endpoints
-    path('api/get-product-info/', views.get_product_info, name='get_product_info'),
-    path('api/get-product-info/', views.get_product_info, name='get_product_info'),
+    # API endpoints
+    path('api/get_product_info/', views.get_product_info, name='api_get_product_info'),
 ]

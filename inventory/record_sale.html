@@ -1,0 +1,548 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+    .card {
+        border: none;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        margin-bottom: 1.5rem;
+        border-radius: 0.5rem;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #eee;
+        padding: 1rem 1.25rem;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 0.375rem;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #ced4da;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+    
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .required-field:after {
+        content: "*";
+        color: #dc3545;
+        margin-left: 0.25rem;
+    }
+    
+    .summary-card {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .summary-row:last-child {
+        border-bottom: none;
+        font-weight: bold;
+    }
+    
+    .summary-label {
+        color: #6c757d;
+    }
+    
+    .summary-value {
+        font-weight: 500;
+    }
+    
+    .stock-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        border-radius: 0.25rem;
+    }
+    
+    .in-stock { background-color: #d4edda; color: #155724; }
+    .low-stock { background-color: #fff3cd; color: #856404; }
+    .out-of-stock { background-color: #f8d7da; color: #721c24; }
+    
+    .product-item {
+        border: 1px solid #eee;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background-color: #f9f9f9;
+    }
+    
+    .product-item:hover {
+        background-color: #f0f0f0;
+    }
+    
+    .btn-remove {
+        color: #dc3545;
+        background: none;
+        border: none;
+        font-size: 1.25rem;
+        cursor: pointer;
+        float: right;
+    }
+    
+    .product-list-empty {
+        padding: 2rem;
+        text-align: center;
+        color: #6c757d;
+        background-color: #f9f9f9;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .error-message {
+        color: #dc3545;
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .success-message {
+        color: #28a745;
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .warning-message {
+        color: #ffc107;
+        margin-top: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .form-validation {
+        margin-top: 0.5rem;
+        padding: 1rem;
+        border-radius: 0.5rem;
+    }
+    
+    .form-validation.error {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+    }
+    
+    .form-validation.success {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+    }
+    
+    .form-validation.warning {
+        background-color: #fff3cd;
+        border: 1px solid #ffeeba;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize products array
+    let selectedProducts = [];
+    
+    // Form elements
+    const productSelect = document.getElementById('product');
+    const quantityInput = document.getElementById('quantity');
+    const paymentMethodSelect = document.getElementById('payment_method');
+    const productList = document.getElementById('product-list');
+    const emptyMessage = document.getElementById('empty-product-list');
+    const productDataInput = document.getElementById('product-data');
+    const subtotalElement = document.getElementById('subtotal');
+    const gstElement = document.getElementById('gst');
+    const totalElement = document.getElementById('total');
+    const formValidation = document.getElementById('form-validation');
+    
+    // Update product info when product is selected
+    productSelect.addEventListener('change', function() {
+        const productId = this.value;
+        
+        if (productId) {
+            fetch("{% url 'api_get_product_info' %}?product_id=" + productId)
+                .then(response => response.json())
+                .then(data => {
+                    // Update stock badge
+                    const badge = document.getElementById('stock-badge');
+                    if (data.stock_quantity <= 0) {
+                        badge.className = 'stock-badge out-of-stock';
+                        badge.textContent = 'Out of Stock';
+                    } else if (data.stock_quantity <= 5) {
+                        badge.className = 'stock-badge low-stock';
+                        badge.textContent = `Low Stock (${data.stock_quantity})`;
+                    } else {
+                        badge.className = 'stock-badge in-stock';
+                        badge.textContent = `In Stock (${data.stock_quantity})`;
+                    }
+                    
+                    // Show stock badge and product info
+                    badge.style.display = 'inline-block';
+                    document.getElementById('product-info-card').style.display = 'block';
+                    
+                    // Update price info
+                    document.getElementById('product-price').textContent = `₹${data.price.toFixed(2)}`;
+                    document.getElementById('product-gst').textContent = `${data.gst_rate}%`;
+                    
+                    // Reset quantity to 1
+                    quantityInput.value = '1';
+                    
+                    // Reset validation message
+                    formValidation.style.display = 'none';
+                })
+                .catch(error => {
+                    showValidationMessage('error', 'Failed to fetch product information');
+                });
+        } else {
+            document.getElementById('product-info-card').style.display = 'none';
+        }
+    });
+    
+    // Update product list and summary
+    function updateProductList() {
+        // Update hidden input with product data
+        productDataInput.value = JSON.stringify(selectedProducts);
+        
+        // Clear product list
+        productList.innerHTML = '';
+        
+        // Show/hide empty message
+        if (selectedProducts.length === 0) {
+            emptyMessage.style.display = 'block';
+            document.getElementById('submit-btn').disabled = true;
+            updateSummary(0, 0, 0);
+        } else {
+            emptyMessage.style.display = 'none';
+            document.getElementById('submit-btn').disabled = false;
+            
+            // Calculate totals
+            let subtotal = 0;
+            let gst = 0;
+            let total = 0;
+            
+            // Add products to list
+            selectedProducts.forEach((product, index) => {
+                const productSubtotal = product.price * product.quantity;
+                const productGst = productSubtotal * (product.gst_rate / 100);
+                const productTotal = productSubtotal + productGst;
+                
+                subtotal += productSubtotal;
+                gst += productGst;
+                total += productTotal;
+                
+                const productItem = document.createElement('div');
+                productItem.className = 'product-item';
+                productItem.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-1">${product.product_name}</h6>
+                            <small class="text-muted">Quantity: ${product.quantity}</small>
+                        </div>
+                        <button class="btn-remove" data-index="${index}" title="Remove">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2">
+                        <span>Subtotal:</span>
+                        <span>₹${productSubtotal.toFixed(2)}</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>GST (${product.gst_rate}%):</span>
+                        <span>₹${productGst.toFixed(2)}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Total:</span>
+                        <span>₹${productTotal.toFixed(2)}</span>
+                    </div>
+                `;
+                productList.appendChild(productItem);
+            });
+            
+            updateSummary(subtotal, gst, total);
+        }
+    }
+    
+    // Update summary values
+    function updateSummary(subtotal, gst, total) {
+        subtotalElement.textContent = `₹${subtotal.toFixed(2)}`;
+        gstElement.textContent = `₹${gst.toFixed(2)}`;
+        totalElement.textContent = `₹${total.toFixed(2)}`;
+    }
+    
+    // Show validation message
+    function showValidationMessage(type, message) {
+        formValidation.className = `form-validation ${type}`;
+        formValidation.textContent = message;
+        formValidation.style.display = 'block';
+    }
+    
+    // Add product to list
+    document.getElementById('add-product-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const productId = productSelect.value;
+        const quantity = parseInt(quantityInput.value);
+        
+        if (!productId || quantity <= 0) {
+            showValidationMessage('error', 'Please select a product and enter a valid quantity');
+            return;
+        }
+        
+        // Get product details
+        fetch("{% url 'api_get_product_info' %}?product_id=" + productId)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch product information');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.stock_quantity < quantity) {
+                    showValidationMessage('error', `Insufficient stock for ${data.name}. Only ${data.stock_quantity} available.`);
+                    return;
+                }
+                
+                // Check if product already exists in the list
+                const existingProductIndex = selectedProducts.findIndex(p => p.product_id === productId);
+                
+                if (existingProductIndex >= 0) {
+                    // Update existing product quantity
+                    selectedProducts[existingProductIndex].quantity += quantity;
+                } else {
+                    // Add new product to the list
+                    selectedProducts.push({
+                        product_id: productId,
+                        product_name: productSelect.options[productSelect.selectedIndex].text,
+                        quantity: quantity,
+                        price: data.price,
+                        gst_rate: data.gst_rate,
+                        stock_quantity: data.stock_quantity
+                    });
+                }
+                
+                // Update product list and summary
+                updateProductList();
+                
+                // Reset form
+                productSelect.value = '';
+                quantityInput.value = '1';
+                
+                // Hide validation message
+                formValidation.style.display = 'none';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showValidationMessage('error', 'Failed to add product');
+            });
+    });
+    
+    // Remove product from list
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('btn-remove')) {
+            const index = parseInt(e.target.dataset.index);
+            selectedProducts.splice(index, 1);
+            updateProductList();
+        }
+    });
+    
+    // Handle form submission
+    document.getElementById('sale-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (selectedProducts.length === 0) {
+            showValidationMessage('error', 'Please add at least one product');
+            return;
+        }
+        
+        // Validate quantities against current stock
+        const promises = selectedProducts.map(product => {
+            return fetch("{% url 'api_get_product_info' %}?product_id=" + product.product_id)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.stock_quantity < product.quantity) {
+                        throw new Error(`Insufficient stock for ${data.name}. Only ${data.stock_quantity} available.`);
+                    }
+                });
+        });
+        
+        Promise.all(promises)
+            .then(() => {
+                // Submit the form
+                this.submit();
+            })
+            .catch(error => {
+                showValidationMessage('error', error.message);
+            });
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h1 class="h3">Record Sale</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Record Sale</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div id="form-validation" class="form-validation" style="display: none;"></div>
+
+    <form id="sale-form" method="post" action="{% url 'record_sale' %}">
+        {% csrf_token %}
+        <input type="hidden" id="product-data" name="product_data" value="[]">
+        
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Product Selection Form -->
+                <div class="card mb-4" id="product-selection-form">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Product Selection</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="product" class="form-label required-field">Product</label>
+                                    <select class="form-select" id="product" required>
+                                        <option value="">Select a product</option>
+                                        {% for product in products %}
+                                        <option value="{{ product.id }}">{{ product.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="quantity" class="form-label required-field">Quantity</label>
+                                    <input type="number" class="form-control" id="quantity" min="1" value="1" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mb-3">
+                                    <label for="payment_method" class="form-label required-field">Payment Method</label>
+                                    <select class="form-select" id="payment_method" name="payment_method" required>
+                                        {% for method in payment_methods %}
+                                        <option value="{{ method.0 }}">{{ method.1 }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="customer" class="form-label">Customer</label>
+                                    <select class="form-select" id="customer" name="customer_id">
+                                        <option value="">Walk-in Customer</option>
+                                        {% for customer in customers %}
+                                        <option value="{{ customer.id }}">{{ customer.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="notes" class="form-label">Notes</label>
+                                    <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <button type="button" class="btn btn-primary" id="add-product-btn">Add Product</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Product List -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Selected Products</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="product-list" class="mb-3">
+                            <div id="empty-product-list" class="product-list-empty">
+                                No products selected yet
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <!-- Product Information Card -->
+                <div class="card mb-4" id="product-info-card" style="display: none;">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Product Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="form-label">Price:</label>
+                                <div id="product-price"></div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label">GST Rate:</label>
+                                <div id="product-gst"></div>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-12">
+                                <label class="form-label">Stock Status:</label>
+                                <div id="stock-badge" class="stock-badge"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Summary Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="summary-row">
+                            <div class="summary-label">Subtotal:</div>
+                            <div class="summary-value" id="subtotal">₹0.00</div>
+                        </div>
+                        <div class="summary-row">
+                            <div class="summary-label">GST:</div>
+                            <div class="summary-value" id="gst">₹0.00</div>
+                        </div>
+                        <div class="summary-row">
+                            <div class="summary-label">Total:</div>
+                            <div class="summary-value" id="total">₹0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12 text-end">
+                <button type="submit" class="btn btn-primary" id="submit-btn" disabled>
+                    Record Sale
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

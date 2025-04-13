@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Dashboard Header -->
+    <div class="row">
+        <div class="col-md-12 text-center mb-4">
+            <h1>Business Dashboard</h1>
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <form method="get" action="{% url 'dashboard' %}" class="d-flex">
+                <input type="text" name="query" class="form-control me-2" placeholder="Search products..." value="{{ request.GET.query }}">
+                <button type="submit" class="btn btn-outline-primary"><i class="fas fa-search"></i> Search</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card text-bg-success mb-3">
+                <div class="card-header"><i class="fas fa-chart-line"></i> Total Sales</div>
+                <div class="card-body">
+                    <h5 class="card-title display-5">{{ total_sales }}</h5>
+                    <p class="card-text">The total number of products sold.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-info mb-3">
+                <div class="card-header"><i class="fas fa-money-bill-wave"></i> Total Revenue</div>
+                <div class="card-body">
+                    <h5 class="card-title display-5">₹{{ total_revenue|floatformat:"2" }}</h5>
+                    <p class="card-text">Total revenue generated, including GST.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-warning mb-3">
+                <div class="card-header"><i class="fas fa-shopping-cart"></i> Total Purchases</div>
+                <div class="card-body">
+                    <h5 class="card-title display-5">₹{{ total_purchases }}</h5>
+                    <p class="card-text">Total amount spent on purchases.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Products Table -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2><i class="fas fa-boxes"></i> Products</h2>
+                <a href="{% url 'create_invoice' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create New Invoice
+                </a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Product</th>
+                            <th>Category</th>
+                            <th>Stock</th>
+                            <th>Price (₹)</th>
+                            <th>GST Rate</th>
+                            <th>Expiry Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td>{{ product.name }}</td>
+                            <td>{{ product.category.name }}</td>
+                            <td class="{% if product.stock_quantity < 10 %}text-danger{% elif product.stock_quantity < 20 %}text-warning{% else %}text-success{% endif %}">
+                                {{ product.stock_quantity }}
+                            </td>
+                            <td>{{ product.price }}</td>
+                            <td>{{ product.gst_rate }}%</td>
+                            <td>{{ product.expiry_date|date:"Y-m-d"|default:"-" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Low Stock Alerts -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <h3><i class="fas fa-exclamation-triangle"></i> Low Stock Products</h3>
+            {% if low_stock_products %}
+            <ul class="list-group">
+                {% for product in low_stock_products %}
+                <li class="list-group-item list-group-item-danger d-flex justify-content-between align-items-center">
+                    {{ product.name }}
+                    <span class="badge bg-danger rounded-pill">{{ product.stock_quantity }} left</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-success">No products are running low on stock.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Sales Graph -->
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="fas fa-chart-line"></i> Sales Trend</h3>
+                </div>
+                <div class="card-body">
+                    <canvas id="salesChart" style="height: 400px;"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Sales Graph Data
+    const salesDates = JSON.parse('{{ dates|escapejs }}');
+    const salesQuantities = JSON.parse('{{ quantities|escapejs }}');
+
+    // Create the sales chart
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    const salesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: salesDates,
+            datasets: [{
+                label: 'Units Sold',
+                data: salesQuantities,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1,
+                fill: false,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointBackgroundColor: 'rgb(75, 192, 192)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgb(75, 192, 192)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Daily Sales Trend',
+                    font: {
+                        size: 16
+                    }
+                },
+                legend: {
+                    position: 'top',
+                    labels: {
+                        font: {
+                            size: 12
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Units Sold',
+                        font: {
+                            size: 12
+                        }
+                    },
+                    ticks: {
+                        font: {
+                            size: 11
+                        }
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date',
+                        font: {
+                            size: 12
+                        }
+                    },
+                    ticks: {
+                        font: {
+                            size: 11
+                        },
+                        autoSkip: true,
+                        maxTicksLimit: 10
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

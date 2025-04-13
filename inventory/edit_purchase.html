@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .card {
+        border: none;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        margin-bottom: 1.5rem;
+        border-radius: 0.5rem;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #eee;
+        padding: 1rem 1.25rem;
+    }
+    
+    .form-control {
+        border-radius: 0.375rem;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #ced4da;
+    }
+    
+    .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+    
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .required-field:after {
+        content: "*";
+        color: #dc3545;
+        margin-left: 0.25rem;
+    }
+    
+    .summary-card {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .summary-row:last-child {
+        border-bottom: none;
+        font-weight: bold;
+    }
+    
+    .summary-label {
+        color: #6c757d;
+    }
+    
+    .summary-value {
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h1 class="h3">Edit Purchase</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'purchase_list' %}">Purchases</a></li>
+                    <li class="breadcrumb-item active">Edit Purchase</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <form method="post" id="purchaseForm">
+        {% csrf_token %}
+        
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Transaction Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="supplier_id" class="form-label required-field">Supplier</label>
+                            <select name="supplier_id" id="supplier_id" class="form-select">
+                                <option value="">Select Supplier</option>
+                                {% for supplier in suppliers %}
+                                <option value="{{ supplier.id }}" {% if transaction.supplier == supplier %}selected{% endif %}>
+                                    {{ supplier.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="date" class="form-label required-field">Date</label>
+                            <input type="date" name="date" id="date" class="form-control" 
+                                   value="{{ transaction.date|date:'Y-m-d' }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes</label>
+                            <textarea name="notes" id="notes" class="form-control" rows="3">{{ transaction.notes }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payment_method" class="form-label">Payment Method</label>
+                            <select name="payment_method" id="payment_method" class="form-select">
+                                <option value="cash" {% if transaction.payment_method == 'cash' %}selected{% endif %}>Cash</option>
+                                <option value="card" {% if transaction.payment_method == 'card' %}selected{% endif %}>Card</option>
+                                <option value="bank_transfer" {% if transaction.payment_method == 'bank_transfer' %}selected{% endif %}>Bank Transfer</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Items</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th>Unit Price</th>
+                                        <th>GST</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items %}
+                                    <tr>
+                                        <td>
+                                            {{ item.product.name }}
+                                            <small class="text-muted">(Stock: {{ item.product.stock_quantity }})</small>
+                                        </td>
+                                        <td>
+                                            <input type="number" name="quantity_{{ item.id }}" 
+                                                   class="form-control" 
+                                                   value="{{ item.quantity }}" 
+                                                   min="0" required>
+                                        </td>
+                                        <td>
+                                            <input type="number" step="0.01" name="price_per_unit_{{ item.id }}" 
+                                                   class="form-control" 
+                                                   value="{{ item.price_per_unit }}" 
+                                                   min="0" required>
+                                        </td>
+                                        <td>
+                                            <input type="number" step="0.01" name="gst_rate_{{ item.id }}" 
+                                                   class="form-control" 
+                                                   value="{{ item.gst_rate }}" 
+                                                   min="0" max="100" required>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="{% url 'purchase_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

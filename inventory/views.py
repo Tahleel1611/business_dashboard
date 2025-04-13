@@ -49,24 +49,36 @@ def dashboard(request):
             if product.stock_quantity <= 10:
                 low_stock_products.append(product)
 
-    # Calculate total sales and revenue
-    total_sales = Sale.objects.aggregate(total=Sum('quantity_sold'))['total'] or 0
-    total_revenue = Sale.objects.aggregate(
-        total=Sum(F('quantity_sold') * F('product__price') * (1 + F('product__gst_rate') / 100))
+    # Calculate total sales and revenue using MultiSaleTransaction
+    total_sales = MultiSaleTransaction.objects.annotate(
+        total_quantity=Sum('multisaleitem_set__quantity_sold')
+    ).aggregate(
+        total=Sum('total_quantity')
     )['total'] or 0
+    
+    total_revenue = MultiSaleTransaction.objects.annotate(
+        total_amount=Sum(
+            F('multisaleitem_set__quantity_sold') * 
+            F('multisaleitem_set__unit_price') * 
+            (1 + F('multisaleitem_set__gst_rate') / 100)
+        )
+    ).aggregate(
+        total=Sum('total_amount')
+    )['total'] or 0
+    
     total_purchases = Purchase.objects.aggregate(
         total=Sum(F('quantity') * F('price_per_unit'))
     )['total'] or 0
 
-    # Get sales data for the graph
+    # Get sales data for the graph using MultiSaleTransaction
     today = timezone.now().date()
     thirty_days_ago = today - timedelta(days=30)
     
-    sales_data = Sale.objects.filter(
-        date__gte=thirty_days_ago
-    ).values('date').annotate(
-        total_quantity=Sum('quantity_sold')
-    ).order_by('date')
+    sales_data = MultiSaleTransaction.objects.filter(
+        date__date__range=[thirty_days_ago, today]
+    ).annotate(
+        total_quantity=Sum('multisaleitem_set__quantity_sold')
+    ).values('date', 'total_quantity').order_by('date')
 
     dates = [entry['date'].strftime('%Y-%m-%d') for entry in sales_data]
     quantities = [entry['total_quantity'] for entry in sales_data]
@@ -117,6 +129,7 @@ def record_sale(request):
             total_gst = Decimal('0')
             total_quantity = 0
             
+            # First validate all quantities before processing
             for product_item in product_data:
                 product_id = product_item.get('product_id')
                 quantity = int(product_item.get('quantity', 0))
@@ -132,6 +145,21 @@ def record_sale(request):
                         messages.error(request, f"Insufficient stock for {product.name}. Only {product.stock_quantity} available.")
                         sale_transaction.delete()  # Rollback transaction
                         return redirect('record_sale')
+                except Product.DoesNotExist:
+                    messages.error(request, f"Product with ID {product_id} does not exist.")
+                    sale_transaction.delete()  # Rollback transaction
+                    return redirect('record_sale')
+            
+            # Process products after validation
+            for product_item in product_data:
+                product_id = product_item.get('product_id')
+                quantity = int(product_item.get('quantity', 0))
+                
+                if not product_id or quantity <= 0:
+                    continue
+                    
+                try:
+                    product = Product.objects.get(id=product_id)
                     
                     # Create sale record
                     sale = MultiSaleItem.objects.create(
@@ -238,6 +266,7 @@ def record_purchase(request):
             )
             
             # Process each product
+            total_amount = Decimal('0')
             for product_item in product_data:
                 product_id = product_item.get('product_id')
                 quantity = int(product_item.get('quantity', 0))
@@ -262,10 +291,25 @@ def record_purchase(request):
                     # Update stock quantity
                     product.stock_quantity += quantity
                     product.save()
+                    
+                    # Calculate total amount for this item
+                    subtotal = price_per_unit * quantity
+                    gst_amount = subtotal * (gst_rate / 100)
+                    total_amount += subtotal + gst_amount
+                    
                 except Product.DoesNotExist:
                     messages.warning(request, f"Product with ID {product_id} does not exist.")
             
-            messages.success(request, "Purchase transaction recorded successfully!")
+            # Create payment record
+            if total_amount > 0:
+                Payment.objects.create(
+                    multipurchasetransaction=purchase_transaction,
+                    amount=total_amount,
+                    payment_method=payment_method,
+                    transaction_id=f"PURCHASE-{purchase_transaction.id}"
+                )
+            
+            messages.success(request, f"Purchase transaction recorded successfully! Total amount: ₹{total_amount:.2f}")
             return redirect('purchase_list')
             
         except Exception as e:
@@ -572,6 +616,27 @@ def record_payment(request, pk, transaction_type='invoice'):
         'transaction_id': pk,
         'transaction_type': transaction_type
     }
+    
+    if transaction_type == 'invoice':
+        try:
+            invoice = Invoice.objects.get(id=pk)
+            context.update({
+                'invoice_number': invoice.invoice_number,
+                'invoice_date': invoice.date.strftime('%Y-%m-%d')
+            })
+        except Invoice.DoesNotExist:
+            pass
+    
+    elif transaction_type == 'purchase':
+        try:
+            purchase = MultiPurchaseTransaction.objects.get(id=pk)
+            context.update({
+                'purchase_order_number': f'PO-{pk}',
+                'purchase_date': purchase.date.strftime('%Y-%m-%d')
+            })
+        except MultiPurchaseTransaction.DoesNotExist:
+            pass
+    
     return render(request, 'inventory/payment_form.html', context)
 
 # Purchase List View
@@ -580,7 +645,11 @@ def purchase_list(request):
     
     # Add calculated fields
     for transaction in transactions:
-        total_amount = sum(item.total_amount() for item in transaction.multipurchaseitem_set.all())
+        total_amount = Decimal('0')
+        for item in transaction.multipurchaseitem_set.all():
+            subtotal = item.price_per_unit * item.quantity
+            gst_amount = subtotal * (item.gst_rate / 100)
+            total_amount += subtotal + gst_amount
         transaction.total_amount = total_amount
         transaction.is_paid = Payment.objects.filter(multipurchasetransaction=transaction).exists()
         transaction.is_overdue = not transaction.is_paid and (transaction.date + timedelta(days=30)) < timezone.now()
@@ -833,25 +902,6 @@ def invoice_list(request):
     return render(request, 'inventory/invoice_list.html', {'invoices': invoices})
 
 # Payment Views
-def get_product_info(request):
-    product_id = request.GET.get('product_id')
-    if not product_id:
-        return JsonResponse({'error': 'Product ID is required'}, status=400)
-    
-    try:
-        product = Product.objects.get(id=product_id)
-        data = {
-            'name': product.name,
-            'category': product.category.name if product.category else 'N/A',
-            'price': product.price,
-            'gst_rate': product.gst_rate,
-            'stock_quantity': product.stock_quantity,
-            'hsn_code': product.hsn_code,
-            'expiry_date': product.expiry_date.strftime('%Y-%m-%d') if product.expiry_date else 'N/A'
-        }
-        return JsonResponse(data)
-    except Product.DoesNotExist:
-        return JsonResponse({'error': 'Product not found'}, status=404)
 
 # Supplier Views
 def supplier_list(request):

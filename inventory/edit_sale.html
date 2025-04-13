@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .card {
+        border: none;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        margin-bottom: 1.5rem;
+        border-radius: 0.5rem;
+    }
+    
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #eee;
+        padding: 1rem 1.25rem;
+    }
+    
+    .form-control {
+        border-radius: 0.375rem;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #ced4da;
+    }
+    
+    .form-control:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+    
+    .form-label {
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .required-field:after {
+        content: "*";
+        color: #dc3545;
+        margin-left: 0.25rem;
+    }
+    
+    .summary-card {
+        background-color: #f8f9fa;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .summary-row:last-child {
+        border-bottom: none;
+        font-weight: bold;
+    }
+    
+    .summary-label {
+        color: #6c757d;
+    }
+    
+    .summary-value {
+        font-weight: 500;
+    }
+    
+    .stock-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        border-radius: 0.25rem;
+    }
+    
+    .in-stock { background-color: #d4edda; color: #155724; }
+    .low-stock { background-color: #fff3cd; color: #856404; }
+    .out-of-stock { background-color: #f8d7da; color: #721c24; }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle quantity changes
+    document.querySelectorAll('.quantity-input').forEach(input => {
+        input.addEventListener('change', function() {
+            const itemId = this.dataset.itemId;
+            const quantity = parseInt(this.value) || 0;
+            
+            // Update stock badge
+            const product = products.find(p => p.id === itemId);
+            if (product) {
+                const badge = document.getElementById(`stock-badge-${itemId}`);
+                if (product.stock_quantity - quantity <= 0) {
+                    badge.className = 'stock-badge out-of-stock';
+                    badge.textContent = 'Out of Stock';
+                } else if (product.stock_quantity - quantity <= 5) {
+                    badge.className = 'stock-badge low-stock';
+                    badge.textContent = `Low Stock (${product.stock_quantity - quantity})`;
+                } else {
+                    badge.className = 'stock-badge in-stock';
+                    badge.textContent = `In Stock (${product.stock_quantity - quantity})`;
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h1 class="h3">Edit Sale</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'sale_list' %}">Sales</a></li>
+                    <li class="breadcrumb-item active">Edit Sale</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <form method="post" id="saleForm">
+        {% csrf_token %}
+        
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Transaction Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="customer_id" class="form-label required-field">Customer</label>
+                            <select name="customer_id" id="customer_id" class="form-select">
+                                <option value="">Select Customer</option>
+                                {% for customer in customers %}
+                                <option value="{{ customer.id }}" {% if transaction.customer == customer %}selected{% endif %}>
+                                    {{ customer.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="date" class="form-label required-field">Date</label>
+                            <input type="date" name="date" id="date" class="form-control" 
+                                   value="{{ transaction.date|date:'Y-m-d' }}" required>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Items</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Product</th>
+                                        <th>Quantity</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in items %}
+                                    <tr>
+                                        <td>
+                                            {{ item.product.name }}
+                                            <small class="text-muted">(₹{{ item.product.price }})</small>
+                                        </td>
+                                        <td>
+                                            <input type="number" name="quantity_{{ item.id }}" 
+                                                   class="form-control quantity-input" 
+                                                   data-item-id="{{ item.product.id }}"
+                                                   value="{{ item.quantity_sold }}" 
+                                                   min="0" required>
+                                            <div id="stock-badge-{{ item.product.id }}" 
+                                                 class="stock-badge {% if item.product.stock_quantity <= 0 %}out-of-stock{% elif item.product.stock_quantity <= 5 %}low-stock{% else %}in-stock{% endif %}">
+                                                {% if item.product.stock_quantity <= 0 %}Out of Stock{% elif item.product.stock_quantity <= 5 %}Low Stock ({{ item.product.stock_quantity }}){% else %}In Stock ({{ item.product.stock_quantity }}){% endif %}
+                                            </div>
+                                        </td>
+                                        <td>₹{{ item.total_amount|floatformat:2 }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="{% url 'sale_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

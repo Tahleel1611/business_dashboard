@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+
+{% block title %}Sales Graph{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>Sales Overview</h2>
+    
+    <!-- Sales Graph -->
+    <div>
+        <h3>Sales Over Time</h3>
+        <canvas id="salesChart" width="400" height="200"></canvas>
+    </div>
+
+    <!-- Monthly Sales and Purchases Graphs -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <h3>Total Monthly Sales</h3>
+            <canvas id="monthlySalesChart" width="200" height="200"></canvas>
+        </div>
+        <div class="col-md-6">
+            <h3>Total Monthly Purchases</h3>
+            <canvas id="monthlyPurchasesChart" width="200" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Include Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // Sales Over Time Graph
+    var salesDates = JSON.parse('{{ dates|escapejs }}');
+    var salesQuantities = JSON.parse('{{ quantities|escapejs }}');
+
+    var salesCtx = document.getElementById('salesChart').getContext('2d');
+    new Chart(salesCtx, {
+        type: 'line',
+        data: {
+            labels: salesDates,
+            datasets: [{
+                label: 'Sales Quantity',
+                data: salesQuantities,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                fill: true,
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { title: { display: true, text: 'Date' } },
+                y: { title: { display: true, text: 'Quantity Sold' }, beginAtZero: true }
+            }
+        }
+    });
+
+    // Monthly Sales Graph
+    var salesMonths = JSON.parse('{{ sales_months|escapejs }}');
+    var salesTotals = JSON.parse('{{ sales_totals|escapejs }}');
+
+    var monthlySalesCtx = document.getElementById('monthlySalesChart').getContext('2d');
+    new Chart(monthlySalesCtx, {
+        type: 'bar',
+        data: {
+            labels: salesMonths,
+            datasets: [{
+                label: 'Total Sales (₹)',
+                data: salesTotals,
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+
+    // Monthly Purchases Graph
+    var purchaseMonths = JSON.parse('{{ purchase_months|escapejs }}');
+    var purchaseTotals = JSON.parse('{{ purchase_totals|escapejs }}');
+
+    var monthlyPurchasesCtx = document.getElementById('monthlyPurchasesChart').getContext('2d');
+    new Chart(monthlyPurchasesCtx, {
+        type: 'bar',
+        data: {
+            labels: purchaseMonths,
+            datasets: [{
+                label: 'Total Purchases (₹)',
+                data: purchaseTotals,
+                backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1,
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+</script>
+
+{% endblock %}
