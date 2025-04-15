@@ -98,17 +98,58 @@
             type: 'line',
             data: {
                 labels: salesData.labels,
-                datasets: salesData.datasets
+                datasets: [{
+                    label: 'Sales',
+                    data: salesData.datasets[0].data,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(75, 192, 192, 1)',
+                    fill: {
+                        target: 'origin',
+                        above: 'rgba(75, 192, 192, 0.1)',
+                        below: 'rgba(75, 192, 192, 0.1)'
+                    }
+                }]
             },
             options: {
                 responsive: true,
                 plugins: {
                     legend: {
                         position: 'top',
+                        labels: {
+                            font: {
+                                size: 12
+                            }
+                        }
                     },
                     title: {
                         display: true,
-                        text: 'Monthly Sales Trend'
+                        text: 'Monthly Sales Trend',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-IN', {
+                                        style: 'currency',
+                                        currency: 'INR'
+                                    }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -116,8 +157,16 @@
                         beginAtZero: true,
                         ticks: {
                             callback: function(value) {
-                                return '$' + value.toLocaleString();
+                                return new Intl.NumberFormat('en-IN', {
+                                    style: 'currency',
+                                    currency: 'INR'
+                                }).format(value);
                             }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
                         }
                     }
                 }
@@ -131,17 +180,49 @@
             type: 'bar',
             data: {
                 labels: profitData.labels,
-                datasets: profitData.datasets
+                datasets: [{
+                    label: 'Profit',
+                    data: profitData.datasets[0].data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
             },
             options: {
                 responsive: true,
                 plugins: {
                     legend: {
                         position: 'top',
+                        labels: {
+                            font: {
+                                size: 12
+                            }
+                        }
                     },
                     title: {
                         display: true,
-                        text: 'Quarterly Profit Analysis'
+                        text: 'Quarterly Profit Analysis',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-IN', {
+                                        style: 'currency',
+                                        currency: 'INR'
+                                    }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -149,7 +230,10 @@
                         beginAtZero: true,
                         ticks: {
                             callback: function(value) {
-                                return '$' + value.toLocaleString();
+                                return new Intl.NumberFormat('en-IN', {
+                                    style: 'currency',
+                                    currency: 'INR'
+                                }).format(value);
                             }
                         }
                     }
@@ -161,20 +245,47 @@
     const inventoryCtx = document.getElementById('inventoryChart').getContext('2d');
     if (inventoryCtx) {
         inventoryChart = new Chart(inventoryCtx, {
-            type: 'pie',
+            type: 'radar',
             data: {
                 labels: inventoryData.labels,
-                datasets: inventoryData.datasets
+                datasets: [{
+                    label: 'Inventory',
+                    data: inventoryData.datasets[0].data,
+                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1,
+                    pointBackgroundColor: 'rgba(153, 102, 255, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(153, 102, 255, 1)'
+                }]
             },
             options: {
                 responsive: true,
                 plugins: {
                     legend: {
                         position: 'right',
+                        labels: {
+                            font: {
+                                size: 12
+                            }
+                        }
                     },
                     title: {
                         display: true,
-                        text: 'Inventory Distribution'
+                        text: 'Inventory Distribution',
+                        font: {
+                            size: 16
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        angleLines: {
+                            display: true
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 100
                     }
                 }
             }
@@ -184,7 +295,7 @@
     const customerCtx = document.getElementById('customerChart').getContext('2d');
     if (customerCtx) {
         customerChart = new Chart(customerCtx, {
-            type: 'doughnut',
+            type: 'bar',
             data: {
                 labels: customerData.labels,
                 datasets: customerData.datasets
@@ -193,11 +304,55 @@
                 responsive: true,
                 plugins: {
                     legend: {
-                        position: 'right',
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 12
+                            }
+                        }
                     },
                     title: {
                         display: true,
-                        text: 'Customer Distribution'
+                        text: 'Top Customers by Average Order Value',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-IN', {
+                                        style: 'currency',
+                                        currency: 'INR'
+                                    }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return new Intl.NumberFormat('en-IN', {
+                                    style: 'currency',
+                                    currency: 'INR'
+                                }).format(value);
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            autoSkip: true,
+                            maxTicksLimit: 10
+                        }
                     }
                 }
             }
@@ -241,7 +396,7 @@
         // Update customer chart
         if (customerChart) {
             customerChart.data.labels = filteredCustomerData.labels;
-            customerChart.data.datasets[0].data = filteredCustomerData.datasets[0].data;
+            customerChart.data.datasets = filteredCustomerData.datasets;
             customerChart.update();
         }
     }

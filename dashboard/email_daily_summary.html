@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Daily Business Summary</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+        .header {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .summary-item {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+        .alert-info {
+            background-color: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .alert-warning {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .alert-danger {
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Daily Business Summary</h2>
+        <p>Date: {{ summary.summary_date|date:"F j, Y" }}</p>
+    </div>
+
+    <div class="summary-item">
+        <h3>Alert Overview</h3>
+        <p>Total Alerts: {{ summary.alerts_count }}</p>
+        <p>Critical Alerts: {{ summary.critical_alerts }}</p>
+    </div>
+
+    {% if alerts %}
+    <div class="summary-item">
+        <h3>Recent Alerts</h3>
+        {% for alert in alerts %}
+        <div class="alert alert-{{ alert.alert_type.name|lower }}">
+            <h4>{{ alert.alert_type.name }}</h4>
+            <p>{{ alert.message }}</p>
+            <small>{{ alert.created_at|date:"M d, Y H:i" }}</small>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="summary-item">
+        <p>Thank you for using our business dashboard system.</p>
+        <p>Best regards,</p>
+        <p>Your Business Dashboard Team</p>
+    </div>
+</body>
+</html>
