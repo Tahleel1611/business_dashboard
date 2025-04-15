@@ -1,0 +1,430 @@
+{% extends 'base.html' %}
+
+{% block extra_head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Filters Section -->
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Filter Data</h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <select class="form-select" id="timeRange">
+                                <option value="all">All Time</option>
+                                <option value="year">Last Year</option>
+                                <option value="month">Last Month</option>
+                                <option value="week">Last Week</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" id="categoryFilter">
+                                <option value="all">All Categories</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="clothing">Clothing</option>
+                                <option value="food">Food</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary" onclick="applyFilters()">Apply Filters</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sales Overview -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Sales Overview</h5>
+                    <canvas id="salesOverviewChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profit Analysis -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Profit Analysis</h5>
+                    <canvas id="profitChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Trends -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Inventory Trends</h5>
+                    <canvas id="inventoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Insights -->
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Customer Insights</h5>
+                    <canvas id="customerChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Chart references
+    let salesChart, profitChart, inventoryChart, customerChart;
+
+    // Get data from Django context
+    const salesData = JSON.parse('{{ sales_data|safe|escapejs }}');
+    const profitData = JSON.parse('{{ profit_data|safe|escapejs }}');
+    const inventoryData = JSON.parse('{{ inventory_data|safe|escapejs }}');
+    const customerData = JSON.parse('{{ customer_data|safe|escapejs }}');
+
+    // Initialize charts
+    const salesCtx = document.getElementById('salesOverviewChart').getContext('2d');
+    if (salesCtx) {
+        salesChart = new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: salesData.labels,
+                datasets: [{
+                    label: 'Sales',
+                    data: salesData.datasets[0].data,
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    tension: 0.1,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: 'rgba(75, 192, 192, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(75, 192, 192, 1)',
+                    fill: {
+                        target: 'origin',
+                        above: 'rgba(75, 192, 192, 0.1)',
+                        below: 'rgba(75, 192, 192, 0.1)'
+                    }
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Monthly Sales Trend',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-IN', {
+                                        style: 'currency',
+                                        currency: 'INR'
+                                    }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return new Intl.NumberFormat('en-IN', {
+                                    style: 'currency',
+                                    currency: 'INR'
+                                }).format(value);
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const profitCtx = document.getElementById('profitChart').getContext('2d');
+    if (profitCtx) {
+        profitChart = new Chart(profitCtx, {
+            type: 'bar',
+            data: {
+                labels: profitData.labels,
+                datasets: [{
+                    label: 'Profit',
+                    data: profitData.datasets[0].data,
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Quarterly Profit Analysis',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-IN', {
+                                        style: 'currency',
+                                        currency: 'INR'
+                                    }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return new Intl.NumberFormat('en-IN', {
+                                    style: 'currency',
+                                    currency: 'INR'
+                                }).format(value);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    const inventoryCtx = document.getElementById('inventoryChart').getContext('2d');
+    if (inventoryCtx) {
+        inventoryChart = new Chart(inventoryCtx, {
+            type: 'radar',
+            data: {
+                labels: inventoryData.labels,
+                datasets: [{
+                    label: 'Inventory',
+                    data: inventoryData.datasets[0].data,
+                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1,
+                    pointBackgroundColor: 'rgba(153, 102, 255, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(153, 102, 255, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Inventory Distribution',
+                        font: {
+                            size: 16
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        angleLines: {
+                            display: true
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                }
+            }
+        });
+    }
+
+    const customerCtx = document.getElementById('customerChart').getContext('2d');
+    if (customerCtx) {
+        customerChart = new Chart(customerCtx, {
+            type: 'bar',
+            data: {
+                labels: customerData.labels,
+                datasets: customerData.datasets
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: 'Top Customers by Average Order Value',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('en-IN', {
+                                        style: 'currency',
+                                        currency: 'INR'
+                                    }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return new Intl.NumberFormat('en-IN', {
+                                    style: 'currency',
+                                    currency: 'INR'
+                                }).format(value);
+                            }
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            autoSkip: true,
+                            maxTicksLimit: 10
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Filter function
+    function applyFilters() {
+        const timeRange = document.getElementById('timeRange').value;
+        const category = document.getElementById('categoryFilter').value;
+        updateCharts(timeRange, category);
+    }
+
+    function updateCharts(timeRange, category) {
+        const filteredSalesData = filterData(salesData, timeRange, category);
+        const filteredProfitData = filterData(profitData, timeRange, category);
+        const filteredInventoryData = filterData(inventoryData, timeRange, category);
+        const filteredCustomerData = filterData(customerData, timeRange, category);
+
+        // Update sales chart
+        if (salesChart) {
+            salesChart.data.labels = filteredSalesData.labels;
+            salesChart.data.datasets[0].data = filteredSalesData.datasets[0].data;
+            salesChart.update();
+        }
+
+        // Update profit chart
+        if (profitChart) {
+            profitChart.data.labels = filteredProfitData.labels;
+            profitChart.data.datasets[0].data = filteredProfitData.datasets[0].data;
+            profitChart.update();
+        }
+
+        // Update inventory chart
+        if (inventoryChart) {
+            inventoryChart.data.labels = filteredInventoryData.labels;
+            inventoryChart.data.datasets[0].data = filteredInventoryData.datasets[0].data;
+            inventoryChart.update();
+        }
+
+        // Update customer chart
+        if (customerChart) {
+            customerChart.data.labels = filteredCustomerData.labels;
+            customerChart.data.datasets = filteredCustomerData.datasets;
+            customerChart.update();
+        }
+    }
+
+    function filterData(data, timeRange, category) {
+        const filteredData = JSON.parse(JSON.stringify(data));
+        
+        switch(timeRange) {
+            case 'year':
+                filteredData.labels = filteredData.labels.filter((_, index) => index % 12 === 0);
+                filteredData.datasets[0].data = filteredData.datasets[0].data.filter((_, index) => index % 12 === 0);
+                break;
+            case 'month':
+                filteredData.labels = filteredData.labels.filter((_, index) => index % 4 === 0);
+                filteredData.datasets[0].data = filteredData.datasets[0].data.filter((_, index) => index % 4 === 0);
+                break;
+            case 'week':
+                filteredData.labels = filteredData.labels.filter((_, index) => index % 2 === 0);
+                filteredData.datasets[0].data = filteredData.datasets[0].data.filter((_, index) => index % 2 === 0);
+                break;
+        }
+
+        if (category !== 'all') {
+            filteredData.labels = filteredData.labels.filter((_, index) => index % 3 === 0);
+            filteredData.datasets[0].data = filteredData.datasets[0].data.filter((_, index) => index % 3 === 0);
+        }
+
+        return filteredData;
+    }
+</script>
+{% endblock %}

@@ -33,6 +33,7 @@
         }
     </style>
     {% block extra_head %}{% endblock %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
@@ -48,6 +49,11 @@
                     <li class="nav-item">
                         <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
                             <i class="fas fa-chart-line"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.resolver_match.url_name == 'visualization' %}active{% endif %}" href="{% url 'visualization' %}">
+                            <i class="fas fa-chart-bar"></i> Visualization
                         </a>
                     </li>
                     <!-- Sales & Purchases Dropdown -->
