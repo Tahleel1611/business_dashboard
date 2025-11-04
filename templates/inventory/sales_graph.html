@@ -3,107 +3,157 @@
 {% block title %}Sales Graph{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h2>Sales Overview</h2>
-    
-    <!-- Sales Graph -->
-    <div>
-        <h3>Sales Over Time</h3>
-        <canvas id="salesChart" width="400" height="200"></canvas>
-    </div>
+<h2>📊 Sales Analytics Overview</h2>
 
-    <!-- Monthly Sales and Purchases Graphs -->
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <h3>Total Monthly Sales</h3>
-            <canvas id="monthlySalesChart" width="200" height="200"></canvas>
-        </div>
-        <div class="col-md-6">
-            <h3>Total Monthly Purchases</h3>
-            <canvas id="monthlyPurchasesChart" width="200" height="200"></canvas>
-        </div>
+<!-- Sales Over Time Graph -->
+<div class="chart-container">
+    <h3>📈 Sales Over Time</h3>
+    <canvas id="salesChart" width="400" height="150"></canvas>
+</div>
+
+<!-- Monthly Sales and Purchases Graphs -->
+<div class="chart-row">
+    <div class="chart-container">
+        <h3>💰 Total Monthly Sales</h3>
+        <canvas id="monthlySalesChart" width="200" height="200"></canvas>
+    </div>
+    
+    <div class="chart-container">
+        <h3>🛒 Total Monthly Purchases</h3>
+        <canvas id="monthlyPurchasesChart" width="200" height="200"></canvas>
     </div>
 </div>
 
-<!-- Include Chart.js -->
+{% endblock %}
+
+{% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
-    // Sales Over Time Graph
-    var salesDates = JSON.parse('{{ dates|escapejs }}');
-    var salesQuantities = JSON.parse('{{ quantities|escapejs }}');
+    if (typeof Chart !== 'undefined') {
+        // Sales Over Time Graph
+        var salesDates = JSON.parse('{{ dates|escapejs }}');
+        var salesQuantities = JSON.parse('{{ quantities|escapejs }}');
 
-    var salesCtx = document.getElementById('salesChart').getContext('2d');
-    new Chart(salesCtx, {
-        type: 'line',
-        data: {
-            labels: salesDates,
-            datasets: [{
-                label: 'Sales Quantity',
-                data: salesQuantities,
-                borderColor: 'rgba(75, 192, 192, 1)',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                fill: true,
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                x: { title: { display: true, text: 'Date' } },
-                y: { title: { display: true, text: 'Quantity Sold' }, beginAtZero: true }
+        var salesCtx = document.getElementById('salesChart').getContext('2d');
+        new Chart(salesCtx, {
+            type: 'line',
+            data: {
+                labels: salesDates,
+                datasets: [{
+                    label: 'Sales Quantity',
+                    data: salesQuantities,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#3498db',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    x: { 
+                        title: { display: true, text: 'Date' },
+                        grid: { display: false }
+                    },
+                    y: { 
+                        title: { display: true, text: 'Quantity Sold' }, 
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    }
+                }
             }
-        }
-    });
+        });
 
-    // Monthly Sales Graph
-    var salesMonths = JSON.parse('{{ sales_months|escapejs }}');
-    var salesTotals = JSON.parse('{{ sales_totals|escapejs }}');
+        // Monthly Sales Graph
+        var salesMonths = JSON.parse('{{ sales_months|escapejs }}');
+        var salesTotals = JSON.parse('{{ sales_totals|escapejs }}');
 
-    var monthlySalesCtx = document.getElementById('monthlySalesChart').getContext('2d');
-    new Chart(monthlySalesCtx, {
-        type: 'bar',
-        data: {
-            labels: salesMonths,
-            datasets: [{
-                label: 'Total Sales (₹)',
-                data: salesTotals,
-                backgroundColor: 'rgba(54, 162, 235, 0.6)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1,
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: { beginAtZero: true }
+        var monthlySalesCtx = document.getElementById('monthlySalesChart').getContext('2d');
+        new Chart(monthlySalesCtx, {
+            type: 'bar',
+            data: {
+                labels: salesMonths,
+                datasets: [{
+                    label: 'Total Sales (₹)',
+                    data: salesTotals,
+                    backgroundColor: 'rgba(39, 174, 96, 0.7)',
+                    borderColor: '#27ae60',
+                    borderWidth: 2,
+                    borderRadius: 5,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
             }
-        }
-    });
+        });
 
-    // Monthly Purchases Graph
-    var purchaseMonths = JSON.parse('{{ purchase_months|escapejs }}');
-    var purchaseTotals = JSON.parse('{{ purchase_totals|escapejs }}');
+        // Monthly Purchases Graph
+        var purchaseMonths = JSON.parse('{{ purchase_months|escapejs }}');
+        var purchaseTotals = JSON.parse('{{ purchase_totals|escapejs }}');
 
-    var monthlyPurchasesCtx = document.getElementById('monthlyPurchasesChart').getContext('2d');
-    new Chart(monthlyPurchasesCtx, {
-        type: 'bar',
-        data: {
-            labels: purchaseMonths,
-            datasets: [{
-                label: 'Total Purchases (₹)',
-                data: purchaseTotals,
-                backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                borderColor: 'rgba(255, 99, 132, 1)',
-                borderWidth: 1,
-            }]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: { beginAtZero: true }
+        var monthlyPurchasesCtx = document.getElementById('monthlyPurchasesChart').getContext('2d');
+        new Chart(monthlyPurchasesCtx, {
+            type: 'bar',
+            data: {
+                labels: purchaseMonths,
+                datasets: [{
+                    label: 'Total Purchases (₹)',
+                    data: purchaseTotals,
+                    backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                    borderColor: '#e74c3c',
+                    borderWidth: 2,
+                    borderRadius: 5,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
             }
-        }
-    });
+        });
+    }
 </script>
-
 {% endblock %}
