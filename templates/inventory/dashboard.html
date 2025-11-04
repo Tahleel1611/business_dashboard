@@ -3,138 +3,125 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<div class="container">
-    <!-- Dashboard Header -->
-    <div class="row">
-        <div class="col-md-12 text-center mb-4">
-            <h1>Business Dashboard</h1>
-        </div>
-    </div>
+<!-- Dashboard Header -->
+<h1>Business Dashboard</h1>
 
-    <!-- Search Form -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <form method="get" action="{% url 'dashboard' %}" class="d-flex">
-                <input type="text" name="query" class="form-control me-2" placeholder="Search products..." value="{{ request.GET.query }}">
-                <button type="submit" class="btn btn-outline-primary"><i class="fas fa-search"></i> Search</button>
-            </form>
-        </div>
-    </div>
+<!-- Search Form -->
+<form method="get" action="{% url 'dashboard' %}" class="search-form">
+    <input type="text" name="query" placeholder="Search products..." value="{{ request.GET.query }}">
+    <button type="submit" class="icon-search">Search</button>
+</form>
 
-    <!-- Stats Section -->
-    <div class="row">
-        <div class="col-md-4">
-            <div class="card text-bg-success mb-3">
-                <div class="card-header"><i class="fas fa-chart-line"></i> Total Sales</div>
-                <div class="card-body">
-                    <h5 class="card-title display-5">{{ total_sales }}</h5>
-                    <p class="card-text">The total number of products sold.</p>
-                </div>
-            </div>
+<!-- Stats Section -->
+<div class="stats-row">
+    <div class="stat-card success">
+        <div class="stat-card-header">
+            <span class="icon-chart"></span>
+            Total Sales
         </div>
-        <div class="col-md-4">
-            <div class="card text-bg-info mb-3">
-                <div class="card-header"><i class="fas fa-money-bill-wave"></i> Total Revenue</div>
-                <div class="card-body">
-                    <h5 class="card-title display-5">₹{{ total_revenue }}</h5>
-                    <p class="card-text">Total revenue generated, including GST.</p>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-bg-warning mb-3">
-                <div class="card-header"><i class="fas fa-shopping-cart"></i> Total Purchases</div>
-                <div class="card-body">
-                    <h5 class="card-title display-5">₹{{ total_purchases }}</h5>
-                    <p class="card-text">Total amount spent on purchases.</p>
-                </div>
-            </div>
-        </div>
+        <div class="stat-card-value">{{ total_sales }}</div>
+        <div class="stat-card-description">The total number of products sold.</div>
     </div>
-
-    <!-- Products Table -->
-    <div class="row mt-4">
-        <div class="col-md-12">
-            <h2><i class="fas fa-boxes"></i> Products</h2>
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>Product</th>
-                            <th>Category</th>
-                            <th>Stock</th>
-                            <th>Price (₹)</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for product in products %}
-                        <tr>
-                            <td>{{ product.name }}</td>
-                            <td>{{ product.category.name }}</td>
-                            <td class="{% if product.stock_quantity < 10 %}text-danger{% elif product.stock_quantity < 20 %}text-warning{% else %}text-success{% endif %}">
-                                {{ product.stock_quantity }}
-                            </td>
-                            <td>{{ product.price }}</td>
-                            <td>
-                                <a href="{% url 'generate_invoice' product.id %}" class="btn btn-sm btn-outline-secondary">
-                                    <i class="fas fa-file-pdf"></i> Invoice
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+    
+    <div class="stat-card info">
+        <div class="stat-card-header">
+            <span class="icon-money"></span>
+            Total Revenue
         </div>
+        <div class="stat-card-value">₹{{ total_revenue|floatformat:2 }}</div>
+        <div class="stat-card-description">Total revenue generated, including GST.</div>
+    </div>
+    
+    <div class="stat-card warning">
+        <div class="stat-card-header">
+            <span class="icon-cart"></span>
+            Total Purchases
+        </div>
+        <div class="stat-card-value">₹{{ total_purchases|floatformat:2 }}</div>
+        <div class="stat-card-description">Total amount spent on purchases.</div>
     </div>
 </div>
-<!-- Low Stock Alerts -->
-<div class="row mt-4">
-    <div class="col-md-12">
-        <h3><i class="fas fa-exclamation-triangle"></i> Low Stock Products</h3>
-        {% if low_stock_products %}
-        <ul class="list-group">
-            {% for product in low_stock_products %}
-            <li class="list-group-item list-group-item-danger d-flex justify-content-between align-items-center">
-                {{ product.name }}
-                <span class="badge bg-danger rounded-pill">{{ product.stock_quantity }} left</span>
-            </li>
+
+<!-- Products Table -->
+<div class="table-container">
+    <div class="table-header">
+        <h2><span class="icon-box"></span> Products Inventory</h2>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Product</th>
+                <th>Category</th>
+                <th>Stock</th>
+                <th>Price (₹)</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for product in products %}
+            <tr>
+                <td><strong>{{ product.name }}</strong></td>
+                <td>{{ product.category.name }}</td>
+                <td>
+                    <span class="{% if product.stock_quantity < 10 %}stock-low{% elif product.stock_quantity < 20 %}stock-medium{% else %}stock-good{% endif %}">
+                        {{ product.stock_quantity }} units
+                    </span>
+                </td>
+                <td>₹{{ product.price|floatformat:2 }}</td>
+                <td>
+                    <a href="{% url 'generate_invoice' product.id %}" class="btn btn-outline btn-sm icon-pdf">
+                        Invoice
+                    </a>
+                </td>
+            </tr>
             {% endfor %}
-        </ul>
-        {% else %}
-        <p class="text-success">All products are sufficiently stocked!</p>
-        {% endif %}
-    </div>
-</div>
+        </tbody>
+    </table>
 </div>
 
- <!-- Sales Graph -->
- <div class="row mt-4">
-    <div class="col-md-12">
-        <h3>Sales Over Time</h3>
-        <canvas id="salesChart" width="400" height="200"></canvas>
-    </div>
+<!-- Low Stock Alerts -->
+<div class="alert-section">
+    <h3><span class="icon-alert"></span> Low Stock Products</h3>
+    {% if low_stock_products %}
+    <ul class="alert-list">
+        {% for product in low_stock_products %}
+        <li>
+            <span><strong>{{ product.name }}</strong></span>
+            <span class="badge">{{ product.stock_quantity }} left</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="success-message">✓ All products are sufficiently stocked!</p>
+    {% endif %}
 </div>
 
-<!-- Include Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Sales Graph -->
+<div class="chart-container">
+    <h3>📈 Sales Over Time</h3>
+    <canvas id="salesChart" width="400" height="150"></canvas>
+</div>
 
+{% endblock %}
+
+{% block scripts %}
+{% load static %}
+<script src="{% static 'js/simple-charts.js' %}"></script>
 <script>
     // Sales Graph Data
     var salesDates = JSON.parse('{{ dates|escapejs }}');
     var salesQuantities = JSON.parse('{{ quantities|escapejs }}');
 
-    var ctx = document.getElementById('salesChart').getContext('2d');
-    var salesChart = new Chart(ctx, {
+    // Create line chart using our simple chart library
+    new SimpleChart('salesChart', {
         type: 'line',
         data: {
             labels: salesDates,
             datasets: [{
                 label: 'Sales Quantity',
                 data: salesQuantities,
-                borderColor: 'rgba(75, 192, 192, 1)',
-                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
                 fill: true,
             }]
         },
@@ -147,5 +134,4 @@
         }
     });
 </script>
-
 {% endblock %}
