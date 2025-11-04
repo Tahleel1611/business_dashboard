@@ -1,56 +1,74 @@
 # Business Dashboard
 
-This project is a business dashboard application built with Python. It provides various analytics and visualizations to help businesses make informed decisions.
+Professional, clean, and user-friendly business dashboard built with Python and HTML.
+
+## Badges
+
+- Build: ![CI](https://github.com/Tahleel1611/business_dashboard/actions/workflows/ci.yml/badge.svg)
+- License: MIT
+- Python: 3.10+
+
+## Overview
+
+This repository contains a business dashboard project. It focuses on presenting business metrics and KPIs in a clear, accessible way. The project is primarily written in Python (backend logic) and HTML (front-end templates).
 
 ## Features
 
-- Data visualization
-- Real-time analytics
-- Customizable dashboards
-- User authentication and authorization
+- Modular Python code for data processing
+- Clean HTML templates for a responsive dashboard
+- CI setup for tests and linting
 
-## Installation
+## Quick start
 
-1. Clone the repository:
+1. Clone the repo:
+
    ```bash
-   git clone https://github.com/yourusername/business_dashboard.git
-   ```
-2. Navigate to the project directory:
-   ```bash
+   git clone https://github.com/Tahleel1611/business_dashboard.git
    cd business_dashboard
    ```
-3. Install the required dependencies:
+
+2. Create and activate a virtual environment:
+
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate   # macOS/Linux
+   .\.venv\Scripts\activate  # Windows
+   ```
+
+3. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
 
-## Database
+4. Run tests:
 
-for connecting to database either change the database settings in settings.py ,to your required
-database or to use without any changes use mysql as database and create database called 'dashboard_db'.
+   ```bash
+   pytest
+   ```
 
-## Usage
+5. Run the app (if applicable):
 
-0. use virtual env shell:
    ```bash
-   pipenv shell
+   python -m app   # adapt command to your project entry point
    ```
-1. For database:
-   ```bash
-   python manage.py makemigrations
-   python manage.py migrate
-   ```
-2. Run the application:
-   ```bash
-   python manage.py runserver
-   ```
-3. Open your web browser and go to `http://localhost:8000`.
+
+## Project structure
+
+- `README.md` - Project overview and setup
+- `.github/` - GitHub templates and workflows
+- `templates/` - HTML templates
+- `src/` - Python source code
+- `requirements.txt` - Python dependencies
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request.
+See `CONTRIBUTING.md` for guidelines on contributing, pull requests, and coding standards.
 
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Contact
 
-For any inquiries, please contact [tahleel.banday16@gmail.com].
+For questions or support, open an issue or contact the repository owner: https://github.com/Tahleel1611
