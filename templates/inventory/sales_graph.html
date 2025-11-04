@@ -27,133 +27,78 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% load static %}
+<script src="{% static 'js/simple-charts.js' %}"></script>
 <script>
-    if (typeof Chart !== 'undefined') {
-        // Sales Over Time Graph
-        var salesDates = JSON.parse('{{ dates|escapejs }}');
-        var salesQuantities = JSON.parse('{{ quantities|escapejs }}');
+    // Sales Over Time Graph
+    var salesDates = JSON.parse('{{ dates|escapejs }}');
+    var salesQuantities = JSON.parse('{{ quantities|escapejs }}');
 
-        var salesCtx = document.getElementById('salesChart').getContext('2d');
-        new Chart(salesCtx, {
-            type: 'line',
-            data: {
-                labels: salesDates,
-                datasets: [{
-                    label: 'Sales Quantity',
-                    data: salesQuantities,
-                    borderColor: '#3498db',
-                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3,
-                    pointBackgroundColor: '#3498db',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                    }
-                },
-                scales: {
-                    x: { 
-                        title: { display: true, text: 'Date' },
-                        grid: { display: false }
-                    },
-                    y: { 
-                        title: { display: true, text: 'Quantity Sold' }, 
-                        beginAtZero: true,
-                        grid: { color: 'rgba(0,0,0,0.05)' }
-                    }
-                }
+    new SimpleChart('salesChart', {
+        type: 'line',
+        data: {
+            labels: salesDates,
+            datasets: [{
+                label: 'Sales Quantity',
+                data: salesQuantities,
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                fill: true,
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { title: { display: true, text: 'Date' } },
+                y: { title: { display: true, text: 'Quantity Sold' }, beginAtZero: true }
             }
-        });
+        }
+    });
 
-        // Monthly Sales Graph
-        var salesMonths = JSON.parse('{{ sales_months|escapejs }}');
-        var salesTotals = JSON.parse('{{ sales_totals|escapejs }}');
+    // Monthly Sales Graph
+    var salesMonths = JSON.parse('{{ sales_months|escapejs }}');
+    var salesTotals = JSON.parse('{{ sales_totals|escapejs }}');
 
-        var monthlySalesCtx = document.getElementById('monthlySalesChart').getContext('2d');
-        new Chart(monthlySalesCtx, {
-            type: 'bar',
-            data: {
-                labels: salesMonths,
-                datasets: [{
-                    label: 'Total Sales (₹)',
-                    data: salesTotals,
-                    backgroundColor: 'rgba(39, 174, 96, 0.7)',
-                    borderColor: '#27ae60',
-                    borderWidth: 2,
-                    borderRadius: 5,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                    }
-                },
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        grid: { color: 'rgba(0,0,0,0.05)' }
-                    },
-                    x: {
-                        grid: { display: false }
-                    }
-                }
+    new SimpleChart('monthlySalesChart', {
+        type: 'bar',
+        data: {
+            labels: salesMonths,
+            datasets: [{
+                label: 'Total Sales (₹)',
+                data: salesTotals,
+                backgroundColor: 'rgba(39, 174, 96, 0.7)',
+                borderColor: '#27ae60',
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true }
             }
-        });
+        }
+    });
 
-        // Monthly Purchases Graph
-        var purchaseMonths = JSON.parse('{{ purchase_months|escapejs }}');
-        var purchaseTotals = JSON.parse('{{ purchase_totals|escapejs }}');
+    // Monthly Purchases Graph
+    var purchaseMonths = JSON.parse('{{ purchase_months|escapejs }}');
+    var purchaseTotals = JSON.parse('{{ purchase_totals|escapejs }}');
 
-        var monthlyPurchasesCtx = document.getElementById('monthlyPurchasesChart').getContext('2d');
-        new Chart(monthlyPurchasesCtx, {
-            type: 'bar',
-            data: {
-                labels: purchaseMonths,
-                datasets: [{
-                    label: 'Total Purchases (₹)',
-                    data: purchaseTotals,
-                    backgroundColor: 'rgba(231, 76, 60, 0.7)',
-                    borderColor: '#e74c3c',
-                    borderWidth: 2,
-                    borderRadius: 5,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                    }
-                },
-                scales: {
-                    y: { 
-                        beginAtZero: true,
-                        grid: { color: 'rgba(0,0,0,0.05)' }
-                    },
-                    x: {
-                        grid: { display: false }
-                    }
-                }
+    new SimpleChart('monthlyPurchasesChart', {
+        type: 'bar',
+        data: {
+            labels: purchaseMonths,
+            datasets: [{
+                label: 'Total Purchases (₹)',
+                data: purchaseTotals,
+                backgroundColor: 'rgba(231, 76, 60, 0.7)',
+                borderColor: '#e74c3c',
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true }
             }
-        });
-    }
+        }
+    });
 </script>
 {% endblock %}

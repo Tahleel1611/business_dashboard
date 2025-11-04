@@ -105,55 +105,33 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% load static %}
+<script src="{% static 'js/simple-charts.js' %}"></script>
 <script>
     // Sales Graph Data
     var salesDates = JSON.parse('{{ dates|escapejs }}');
     var salesQuantities = JSON.parse('{{ quantities|escapejs }}');
 
-    if (typeof Chart !== 'undefined') {
-        var ctx = document.getElementById('salesChart').getContext('2d');
-        var salesChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: salesDates,
-                datasets: [{
-                    label: 'Sales Quantity',
-                    data: salesQuantities,
-                    borderColor: '#3498db',
-                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    borderWidth: 3,
-                    pointBackgroundColor: '#3498db',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top',
-                    }
-                },
-                scales: {
-                    x: { 
-                        title: { display: true, text: 'Date' },
-                        grid: { display: false }
-                    },
-                    y: { 
-                        title: { display: true, text: 'Quantity Sold' }, 
-                        beginAtZero: true,
-                        grid: { color: 'rgba(0,0,0,0.05)' }
-                    }
-                }
+    // Create line chart using our simple chart library
+    new SimpleChart('salesChart', {
+        type: 'line',
+        data: {
+            labels: salesDates,
+            datasets: [{
+                label: 'Sales Quantity',
+                data: salesQuantities,
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                fill: true,
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { title: { display: true, text: 'Date' } },
+                y: { title: { display: true, text: 'Quantity Sold' }, beginAtZero: true }
             }
-        });
-    }
+        }
+    });
 </script>
 {% endblock %}

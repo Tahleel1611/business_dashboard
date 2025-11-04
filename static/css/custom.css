@@ -10,8 +10,10 @@
     --light-bg: #ecf0f1;
     --dark-text: #2c3e50;
     --border-radius: 8px;
-    --box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-    --box-shadow-hover: 0 4px 20px rgba(0,0,0,0.12);
+    --shadow-opacity-light: 0.08;
+    --shadow-opacity-medium: 0.12;
+    --box-shadow: 0 2px 10px rgba(0,0,0,var(--shadow-opacity-light));
+    --box-shadow-hover: 0 4px 20px rgba(0,0,0,var(--shadow-opacity-medium));
     --transition: all 0.3s ease;
 }
 
