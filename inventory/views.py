@@ -5,6 +5,7 @@ from django.utils.timezone import now
 from django.db.models import Sum, F
 from django.db.models.functions import TruncMonth
 from .models import Product, Sale, Purchase
+from .sales_analytics import SalesAnalytics
 import csv
 import json
 from reportlab.pdfgen import canvas
@@ -174,3 +175,31 @@ def generate_invoice(request, product_id):
     p.save()
 
     return response
+
+
+# Sales Analytics AI View
+def sales_analytics_ai(request):
+    """AI-powered sales analytics with trend prediction and suggestions"""
+    analytics = SalesAnalytics()
+    forecast_data = analytics.get_sales_forecast()
+    
+    trend_data = forecast_data['trend_data']
+    suggestions = forecast_data['suggestions']
+    top_products = forecast_data['top_products']
+    underperforming = forecast_data['underperforming_products']
+    
+    # Prepare data for chart visualization
+    predictions_json = json.dumps(trend_data.get('predictions', []))
+    historical_json = json.dumps(trend_data.get('historical_sales', []))
+    
+    context = {
+        'trend_data': trend_data,
+        'suggestions': suggestions,
+        'top_products': top_products,
+        'underperforming_products': underperforming,
+        'predictions_json': predictions_json,
+        'historical_json': historical_json,
+    }
+    
+    return render(request, 'inventory/sales_analytics.html', context)
+

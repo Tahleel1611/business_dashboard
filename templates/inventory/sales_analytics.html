@@ -1,0 +1,199 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Sales Analytics{% endblock %}
+
+{% block content %}
+<h1>🤖 AI-Powered Sales Analytics</h1>
+
+{% if trend_data.has_data %}
+<!-- Trend Overview Section -->
+<div class="stats-row">
+    <div class="stat-card {% if trend_data.trend == 'increasing' %}success{% elif trend_data.trend == 'decreasing' %}danger{% else %}info{% endif %}">
+        <div class="stat-card-header">
+            <span class="icon-chart"></span>
+            Sales Trend
+        </div>
+        <div class="stat-card-value">
+            {% if trend_data.trend == 'increasing' %}📈 Increasing
+            {% elif trend_data.trend == 'decreasing' %}📉 Decreasing
+            {% else %}➡️ Stable{% endif %}
+        </div>
+        <div class="stat-card-description">
+            Growth Rate: {{ trend_data.growth_rate|floatformat:2 }}% per day
+        </div>
+    </div>
+    
+    <div class="stat-card info">
+        <div class="stat-card-header">
+            <span class="icon-chart"></span>
+            Average Daily Sales
+        </div>
+        <div class="stat-card-value">{{ trend_data.avg_daily_sales|floatformat:1 }}</div>
+        <div class="stat-card-description">Units sold per day on average</div>
+    </div>
+    
+    <div class="stat-card success">
+        <div class="stat-card-header">
+            <span class="icon-chart"></span>
+            Model Accuracy
+        </div>
+        <div class="stat-card-value">{{ trend_data.model_score|floatformat:2 }}</div>
+        <div class="stat-card-description">Prediction model confidence score</div>
+    </div>
+</div>
+
+<!-- Sales Prediction Chart -->
+<div class="chart-container">
+    <h3>📊 30-Day Sales Prediction</h3>
+    <p class="chart-description">Based on historical data, here's what AI predicts for the next 30 days:</p>
+    <canvas id="predictionChart" width="400" height="150"></canvas>
+</div>
+
+<!-- AI Suggestions Section -->
+<div class="suggestions-section">
+    <h3>💡 AI-Powered Suggestions to Improve Sales</h3>
+    <div class="suggestions-list">
+        {% for suggestion in suggestions %}
+        <div class="suggestion-card">
+            <p>{{ suggestion }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Top Products Section -->
+<div class="products-analysis">
+    <div class="analysis-half">
+        <h3>🌟 Top Performing Products</h3>
+        {% if top_products %}
+        <table class="analysis-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Total Sold</th>
+                    <th>Times Sold</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in top_products %}
+                <tr>
+                    <td><strong>{{ product.product__name }}</strong></td>
+                    <td>{{ product.total_sold }} units</td>
+                    <td>{{ product.times_sold }} times</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="no-data">No sales data available yet.</p>
+        {% endif %}
+    </div>
+    
+    <div class="analysis-half">
+        <h3>📉 Products Needing Attention</h3>
+        {% if underperforming_products %}
+        <table class="analysis-table">
+            <thead>
+                <tr>
+                    <th>Product</th>
+                    <th>Total Sold</th>
+                    <th>Current Stock</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in underperforming_products %}
+                <tr>
+                    <td><strong>{{ product.product__name }}</strong></td>
+                    <td>{{ product.total_sold }} units</td>
+                    <td>{{ product.stock_quantity }} units</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="no-data">All products are performing well!</p>
+        {% endif %}
+    </div>
+</div>
+
+{% else %}
+<!-- No Data Message -->
+<div class="no-data-section">
+    <div class="no-data-card">
+        <h2>📊 No Sales Data Available</h2>
+        <p>{{ trend_data.message }}</p>
+        <p>Start recording sales to unlock AI-powered analytics and predictions!</p>
+        <a href="{% url 'record_sale' %}" class="btn btn-primary">Record Your First Sale</a>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+{% if trend_data.has_data %}
+{% load static %}
+<script src="{% static 'js/simple-charts.js' %}"></script>
+<script>
+    // Prepare data for prediction chart
+    var historicalData = JSON.parse('{{ historical_json|escapejs }}');
+    var predictions = JSON.parse('{{ predictions_json|escapejs }}');
+    
+    // Create labels for historical data (last X days)
+    var historicalLabels = [];
+    for (var i = historicalData.length; i > 0; i--) {
+        historicalLabels.push('Day -' + i);
+    }
+    
+    // Create labels for predictions (next 30 days)
+    var predictionLabels = [];
+    for (var i = 1; i <= predictions.length; i++) {
+        predictionLabels.push('Day +' + i);
+    }
+    
+    // Combine all labels
+    var allLabels = historicalLabels.concat(predictionLabels);
+    
+    // Combine data (historical + null gap + predictions)
+    var historicalValues = historicalData.concat(Array(predictions.length).fill(null));
+    var predictionValues = Array(historicalData.length).fill(null).concat(predictions);
+    
+    // Create the chart
+    new SimpleChart('predictionChart', {
+        type: 'line',
+        data: {
+            labels: allLabels,
+            datasets: [
+                {
+                    label: 'Historical Sales',
+                    data: historicalValues,
+                    borderColor: '#3498db',
+                    backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                    fill: true,
+                },
+                {
+                    label: 'Predicted Sales (AI)',
+                    data: predictionValues,
+                    borderColor: '#e74c3c',
+                    backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                    borderDash: [5, 5],
+                    fill: true,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: { 
+                    title: { display: true, text: 'Time Period' }
+                },
+                y: { 
+                    title: { display: true, text: 'Sales Quantity' }, 
+                    beginAtZero: true 
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

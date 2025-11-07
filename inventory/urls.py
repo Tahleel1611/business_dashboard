@@ -5,7 +5,7 @@ urlpatterns = [
     # Dashboard route
     path('', views.dashboard, name='dashboard'),
 
-    # Route for recording sales
+    # Route for recording sales and purchases
     path('record-sale/', views.record_sale, name='record_sale'),
 
     # Route for generating sales graph
@@ -16,8 +16,7 @@ urlpatterns = [
 
     # Route for generating product invoice
     path('generate-invoice/<int:product_id>/', views.generate_invoice, name='generate_invoice'),
-
-    # Route for recording purchases
-    path('record-sale/', views.record_sale, name='record_sale'),
     
+    # Route for AI-powered sales analytics
+    path('sales-analytics-ai/', views.sales_analytics_ai, name='sales_analytics_ai'),
 ]

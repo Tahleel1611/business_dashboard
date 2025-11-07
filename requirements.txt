@@ -3,4 +3,6 @@ django
 matplotlib
 reportlab
 mysqlclient
+scikit-learn
+pandas
 
