@@ -17,6 +17,10 @@ This repository contains a business dashboard project. It focuses on presenting 
 - Modular Python code for data processing
 - Clean HTML templates for a responsive dashboard
 - CI setup for tests and linting
+- **AI-Powered Sales Analytics** - Predict sales trends and get improvement suggestions
+- Sales tracking and reporting
+- Inventory management with low stock alerts
+- Product categorization and GST calculations
 
 ## Quick start
 
@@ -41,17 +45,37 @@ This repository contains a business dashboard project. It focuses on presenting 
    pip install -r requirements.txt
    ```
 
-4. Run tests:
+4. Run database migrations:
 
    ```bash
-   pytest
+   python manage.py migrate
    ```
 
-5. Run the app (if applicable):
+5. Run tests:
 
    ```bash
-   python -m app   # adapt command to your project entry point
+   python manage.py test
    ```
+
+6. Run the app:
+
+   ```bash
+   python manage.py runserver
+   ```
+
+7. Access the dashboard at `http://localhost:8000`
+
+## AI Sales Analytics
+
+The dashboard includes an AI-powered sales analytics feature that:
+
+- **Predicts Sales Trends**: Uses machine learning (linear regression) to analyze historical data and predict future sales for the next 30 days
+- **Provides AI Suggestions**: Generates actionable recommendations based on detected trends (increasing, decreasing, or stable)
+- **Identifies Top Products**: Shows best-selling products to help focus inventory and marketing efforts
+- **Highlights Underperforming Products**: Points out products that need attention or promotional strategies
+- **Visualizes Data**: Displays interactive charts showing historical sales and future predictions
+
+Access the AI Analytics feature from the navigation menu or visit `/sales-analytics-ai/`.
 
 ## Project structure
 
