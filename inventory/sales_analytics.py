@@ -60,6 +60,10 @@ class SalesAnalytics:
         
         return X, y
     
+    def _ensure_positive_predictions(self, predictions):
+        """Ensure predictions are non-negative (helper method)"""
+        return [max(0, float(p)) for p in predictions]
+    
     def predict_sales_trend(self):
         """Predict future sales trends using linear regression"""
         sales_data = self.get_sales_data()
@@ -111,7 +115,7 @@ class SalesAnalytics:
             'slope': float(slope),
             'growth_rate': float(growth_rate),
             'avg_daily_sales': float(avg_daily_sales),
-            'predictions': [max(0, float(p)) for p in predictions],  # Ensure no negative predictions
+            'predictions': self._ensure_positive_predictions(predictions),
             'historical_sales': [float(val) for val in y],
             'model_score': float(model.score(X, y))
         }
@@ -131,28 +135,27 @@ class SalesAnalytics:
     
     def get_underperforming_products(self, limit=5):
         """Get products with low sales"""
-        # Get all products and their sales
-        all_products = Product.objects.all()
-        product_sales = []
+        from django.db.models import Sum, Q
         
-        for product in all_products:
-            total_sold = Sale.objects.filter(product=product).aggregate(
-                total=Sum('quantity_sold')
-            )['total'] or 0
-            
-            product_sales.append({
+        # Get all products with their total sales in a single query
+        products_with_sales = (
+            Product.objects
+            .annotate(total_sold=Sum('sale__quantity_sold'))
+            .filter(Q(total_sold__gt=0) | Q(total_sold__isnull=True))
+            .order_by('total_sold')
+        )
+        
+        # Prepare result list
+        underperforming = []
+        for product in products_with_sales[:limit]:
+            underperforming.append({
                 'product__name': product.name,
-                'total_sold': total_sold,
+                'total_sold': product.total_sold or 0,
                 'stock_quantity': product.stock_quantity
             })
         
-        # Sort by total sold (ascending) and filter out products with 0 sales
-        underperforming = sorted(
-            [p for p in product_sales if p['total_sold'] > 0],
-            key=lambda x: x['total_sold']
-        )[:limit]
-        
-        return underperforming
+        # Filter out products with 0 sales and return
+        return [p for p in underperforming if p['total_sold'] > 0][:limit]
     
     def generate_suggestions(self, trend_data):
         """Generate AI-powered suggestions based on trend analysis"""
