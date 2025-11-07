@@ -20,4 +20,6 @@ urlpatterns = [
     # Route for recording purchases
     path('record-sale/', views.record_sale, name='record_sale'),
     
+    # Route for AI-powered sales analytics
+    path('sales-analytics-ai/', views.sales_analytics_ai, name='sales_analytics_ai'),
 ]
