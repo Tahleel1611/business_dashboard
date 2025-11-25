@@ -1,3 +1,21 @@
+from django.contrib.auth.models import AbstractUser
+
+# CustomUser Model
+class CustomUser(AbstractUser):
+    ROLE_CHOICES = [
+        ('admin', 'Administrator'),
+        ('manager', 'Manager'),
+        ('sales', 'Sales Staff'),
+        ('viewer', 'Viewer'),
+    ]
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='viewer')
+    department = models.CharField(max_length=100, blank=True)
+    phone_number = models.CharField(max_length=15, blank=True)
+
+    def __str__(self):
+        return f"{self.username} ({self.get_role_display()})"
+
+
 from django.db import models
 
 # Category Model
@@ -54,4 +72,5 @@ class StockThreshold(models.Model):
 
     def __str__(self):
         return f"{self.product.name} - Threshold: {self.threshold}"
+
 
