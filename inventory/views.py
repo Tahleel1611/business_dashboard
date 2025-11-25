@@ -203,3 +203,56 @@ def sales_analytics_ai(request):
     
     return render(request, 'inventory/sales_analytics.html', context)
 
+
+# Authentication Views
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import redirect
+from django.views.decorators.http import require_http_methods
+from .models import CustomUser
+
+
+def login_view(request):
+    """Handle user login"""
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            login(request, user)
+            next_page = request.GET.get('next', 'dashboard')
+            return redirect(next_page)
+        else:
+            return render(request, 'inventory/login.html', {'error': 'Invalid credentials'})
+    
+    return render(request, 'inventory/login.html')
+
+
+@login_required
+def logout_view(request):
+    """Handle user logout"""
+    logout(request)
+    return redirect('login')
+
+
+@login_required
+def profile_view(request):
+    """Display user profile"""
+    return render(request, 'inventory/profile.html', {'user': request.user})
+
+
+@login_required
+def user_management_view(request):
+    """User management view (admin only)"""
+    if not hasattr(request.user, 'role') or request.user.role != 'admin':
+        return HttpResponseForbidden('Admin access required')
+    
+    users = CustomUser.objects.all()
+    return render(request, 'inventory/user_management.html', {'users': users})
+
+
+
