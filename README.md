@@ -15,6 +15,20 @@
 
 ## ✨ Overview
 
+## 🎉 What's New
+
+**Recent Updates:**
+- ✅ **Multi-user authentication with RBAC** - Secure access control with role-based permissions
+- ✅ **Inventory views refactored** - Enhanced UX with improved authentication and product management
+- ✅ **AI-powered sales analytics enhanced** - Advanced trend prediction using scikit-learn with interactive visualizations
+- ✅ **Professional styling improvements** - Custom CSS and better responsive design
+
+**Coming Next:**
+- 🚀 Docker containerization for easy deployment
+- 🚀 PostgreSQL support for production environments
+- 🚀 Advanced ML models (LSTM) for time-series forecasting
+- 🚀 API documentation with Swagger/OpenAPI
+
 A professional, full-featured business dashboard built with **Django** and **Python** that combines modern web technologies with AI-powered analytics. Track sales, manage inventory, monitor KPIs, and leverage machine learning for predictive insights—all in one sleek, user-friendly interface.
 
 ## 🚀 Key Features
